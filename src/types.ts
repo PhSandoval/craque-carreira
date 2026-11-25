@@ -96,6 +96,8 @@ export interface CareerYearRecord {
 export interface PlayerProfile {
   id: string;
   name: string;
+  lastName?: string;
+  knownName?: string;
   surname: string;
   number: number;
   nationality: string;
@@ -107,6 +109,7 @@ export interface PlayerProfile {
   age: number;
   seasonYear: number;
   currentMatchDay: number; // 1 to 38 (rodadas do campeonato)
+  currentWeekDay?: number; // 1 (Reapresentação), 2 (Treino CT), 3 (Bastidores), 4 (Dia de Jogo)
   currentClub: string;
   ovr: number;
   marketValueEur: number; // in Millions

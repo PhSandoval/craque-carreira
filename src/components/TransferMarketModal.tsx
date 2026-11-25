@@ -22,12 +22,14 @@ interface TransferMarketModalProps {
   player: PlayerProfile;
   onSelectTransferClub: (clubName: string) => void;
   onClose: () => void;
+  embedded?: boolean;
 }
 
 export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
   player: rawPlayer,
   onSelectTransferClub,
-  onClose
+  onClose,
+  embedded = false
 }) => {
   const player = ensurePlayerEconomy(rawPlayer);
   const currentClub = CLUBS[player.currentClub] || CLUBS['Grêmio Novorizontino'];
@@ -43,9 +45,14 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
 
   const clubSignings = getSavedClubSignings();
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-3xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
+  const cardContent = (
+    <div
+      className={
+        embedded
+          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          : 'relative w-full max-w-3xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
+      }
+    >
         
         {/* Header */}
         <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
@@ -74,13 +81,15 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1 rounded-lg"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Conteúdo */}
@@ -357,17 +366,26 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
         </div>
 
         {/* Rodapé */}
-        <div className="bg-[#181d28] border-t border-slate-800 p-4 text-center">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-colors"
-          >
-            Fechar Janela
-          </button>
-        </div>
+        {!embedded && (
+          <div className="bg-[#181d28] border-t border-slate-800 p-4 text-center">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-colors"
+            >
+              Fechar Janela
+            </button>
+          </div>
+        )}
 
       </div>
+  );
+
+  if (embedded) return cardContent;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
+      {cardContent}
     </div>
   );
 };

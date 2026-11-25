@@ -27,17 +27,23 @@ import {
 interface MemoryLedgerModalProps {
   player: PlayerProfile;
   onClose: () => void;
+  embedded?: boolean;
 }
 
-export const MemoryLedgerModal: React.FC<MemoryLedgerModalProps> = ({ player, onClose }) => {
+export const MemoryLedgerModal: React.FC<MemoryLedgerModalProps> = ({ player, onClose, embedded = false }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'timeline'>('profile');
   
   // Analisa detalhadamente as escolhas, decisões em campo, coletivas e treinos do atleta
   const decisionProfile = analyzePlayerDecisionProfile(player);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-3xl bg-[#12151c] border border-purple-800/60 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
+  const cardContent = (
+    <div
+      className={
+        embedded
+          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          : 'relative w-full max-w-3xl bg-[#12151c] border border-purple-800/60 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
+      }
+    >
         
         {/* Header do Dossiê */}
         <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
@@ -60,13 +66,15 @@ export const MemoryLedgerModal: React.FC<MemoryLedgerModalProps> = ({ player, on
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Abas de Navegação */}
@@ -399,15 +407,24 @@ export const MemoryLedgerModal: React.FC<MemoryLedgerModalProps> = ({ player, on
           <div className="text-[11px] text-slate-400 hidden sm:block">
             Estilo Atual: <span className="text-purple-300 font-bold">{decisionProfile.styleName}</span>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full sm:w-auto px-6 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors shadow-lg shadow-purple-900/30"
-          >
-            Fechar Dossiê
-          </button>
+          {!embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full sm:w-auto px-6 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-colors shadow-lg shadow-purple-900/30"
+            >
+              Fechar Dossiê
+            </button>
+          )}
         </div>
       </div>
+  );
+
+  if (embedded) return cardContent;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
+      {cardContent}
     </div>
   );
 };

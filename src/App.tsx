@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { PlayerProfile, Club, MatchOutcome, MatchFixture, NewsArticle, MatchHistoryEntry } from './types';
+import {
+  PlayerProfile,
+  Club,
+  MatchOutcome,
+  MatchFixture,
+  NewsArticle,
+  MatchHistoryEntry,
+  WeeklyTrainingResult
+} from './types';
 import { Header } from './components/Header';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { PlayerIdentitySetup } from './components/PlayerIdentitySetup';
-import { CareerDashboard } from './components/CareerDashboard';
+import { CareerDashboard, DashboardTab } from './components/CareerDashboard';
 import { MatchModal } from './components/MatchModal';
-import { MemoryLedgerModal } from './components/MemoryLedgerModal';
-import { NewsFeedModal } from './components/NewsFeedModal';
 import { SettingsModal } from './components/SettingsModal';
-import { LeaguesAndSquadsModal } from './components/LeaguesAndSquadsModal';
-import { TransferMarketModal } from './components/TransferMarketModal';
-import { TrainingAndCalendarModal } from './components/TrainingAndCalendarModal';
-import { TeammateAffinityModal } from './components/TeammateAffinityModal';
 import { MedicalCenterModal } from './components/MedicalCenterModal';
 import { CareerOpportunityModal } from './components/CareerOpportunityModal';
 import { PositionTransitionModal } from './components/PositionTransitionModal';
-import { FinanceAndContractModal } from './components/FinanceAndContractModal';
+import { EventPopupModal, CareerPopupEvent } from './components/EventPopupModal';
 import { getNextMatchFixture } from './services/tournamentService';
 import { applyWeeklyRestRecovery } from './services/trainingCalendarService';
 import { createMemory } from './services/careerMemory';
@@ -30,11 +32,12 @@ import {
 import { generateRandomCareerOpportunity } from './services/dynamicCareerEngine';
 import { calculatePlayerYearlyProgression, checkPositionTransitionOpportunity, PositionTransitionRecommendation } from './services/playerAgingService';
 import { applyWorldStateToClubs, simulateWorldSeasonAdvance } from './services/worldSimulationService';
-import { ensurePlayerEconomy, calculateContractOffer, processPostMatchEconomy } from './services/economyAndContractService';
+import { ensurePlayerEconomy, calculateContractOffer, processPostMatchEconomy, formatEurCurrency } from './services/economyAndContractService';
 import { evaluatePlayerOfTheMonth, evaluateEndOfSeasonAwards } from './services/awardsService';
 import { triggerHaptic } from './services/hapticsService';
+import { getPlayerKnownName } from './utils/playerDisplay';
 import { CloudUserInfo, subscribeCloudAuth, saveCareerToCloud } from './services/cloudSaveService';
-import { CLUBS, findClub } from './data/clubs';
+import { findClub } from './data/clubs';
 
 const STORAGE_KEY_PLAYER = 'craque_carreira_player_v3';
 const STORAGE_KEY_API = 'craque_gemini_api_key_v1';
@@ -93,6 +96,12 @@ export const App: React.FC = () => {
       if (parsed.relationships.partyCliqueChemistry === undefined) {
         parsed.relationships.partyCliqueChemistry = 55;
       }
+      if (!parsed.knownName && parsed.surname) {
+        parsed.knownName = parsed.surname;
+      }
+      if (!parsed.currentWeekDay) {
+        parsed.currentWeekDay = 1;
+      }
 
       return ensurePlayerEconomy(parsed);
     } catch {
@@ -110,28 +119,36 @@ export const App: React.FC = () => {
     }
   });
 
-  // Modais
+  // Navegação Compartimentada por Abas
+  const [activeTab, setActiveTab] = useState<DashboardTab>('resumo');
+  const [trainingSubTab, setTrainingSubTab] = useState<'attributes' | 'agenda' | 'coach_prep' | 'calendar' | 'physio'>('attributes');
+  const [mercadoSubTab, setMercadoSubTab] = useState<'transfer' | 'finance'>('transfer');
+  const [vestiarioSubTab, setVestiarioSubTab] = useState<'squad' | 'news' | 'memories'>('squad');
+
+  // Fila de Pop-ups Obrigatórios (decisões, acontecimentos, avisos e notícias)
+  const [popupQueue, setPopupQueue] = useState<CareerPopupEvent[]>([]);
+
+  // Modais de Ação & Decisão
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [activeOpponent, setActiveOpponent] = useState<Club | null>(null);
   const [activeFixture, setActiveFixture] = useState<MatchFixture | null>(null);
-  const [showMemoryModal, setShowMemoryModal] = useState(false);
-  const [showNewsModal, setShowNewsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showLeaguesModal, setShowLeaguesModal] = useState(false);
-  const [showTransferMarketModal, setShowTransferMarketModal] = useState(false);
-  const [showTrainingModal, setShowTrainingModal] = useState(false);
-  const [trainingInitialTab, setTrainingInitialTab] = useState<'attributes' | 'agenda'>('attributes');
-  const [showFinanceModal, setShowFinanceModal] = useState(false);
-  const [showTeammatesModal, setShowTeammatesModal] = useState(false);
   const [showMedicalCenterModal, setShowMedicalCenterModal] = useState(false);
   const [showOpportunityModal, setShowOpportunityModal] = useState(false);
   const [transitionRecommendation, setTransitionRecommendation] = useState<PositionTransitionRecommendation | null>(null);
   const [showTransitionModal, setShowTransitionModal] = useState(false);
 
-  // Nuvem Firebase & Banner de Premiação
+  // Nuvem Firebase
   const [cloudUser, setCloudUser] = useState<CloudUserInfo | null>(null);
   const [lastCloudSyncAt, setLastCloudSyncAt] = useState<number | null>(null);
-  const [awardCelebrationBanner, setAwardCelebrationBanner] = useState<{ title: string; subtitle: string } | null>(null);
+
+  const enqueuePopup = (event: CareerPopupEvent) => {
+    setPopupQueue(prev => [...prev, event]);
+  };
+
+  const dismissCurrentPopup = () => {
+    setPopupQueue(prev => prev.slice(1));
+  };
 
   // Inicializa o estado persistido do mundo (idades de adversários, regens e transferências anteriores)
   useEffect(() => {
@@ -178,11 +195,353 @@ export const App: React.FC = () => {
       localStorage.removeItem('craque_world_state_v1');
       resetLeagueSimulationState();
     } catch {}
+    setPopupQueue([]);
+    setActiveTab('resumo');
     setPlayer(null);
+  };
+
+  const handleCareerCreated = (newPlayer: PlayerProfile) => {
+    const clubObj = findClub(newPlayer.currentClub);
+    const known = getPlayerKnownName(newPlayer);
+    setPlayer({ ...newPlayer, currentWeekDay: 1 });
+    setActiveTab('resumo');
+
+    enqueuePopup({
+      id: `popup_welcome_${Date.now()}`,
+      category: 'welcome',
+      badge: 'Apresentação Oficial',
+      title: `Bem-vindo ao ${clubObj.name}, ${known}!`,
+      subtitle: `Camisa #${newPlayer.number} • Estilo: ${newPlayer.playStyleName || newPlayer.position}`,
+      description: `Você assinou seu primeiro contrato profissional e já se apresenta ao técnico ${clubObj.coachName}. Acompanhe sua agenda semanal no Resumo e avance os dias até a estreia na Rodada 1.`,
+      highlights: [
+        { label: 'OVR Inicial', value: String(newPlayer.ovr), tone: 'emerald' },
+        { label: 'Salário/Mês', value: formatEurCurrency(newPlayer.contract?.monthlySalaryEur || 15000), tone: 'sky' },
+        { label: 'Clube', value: clubObj.shortName, tone: 'amber' }
+      ],
+      primaryActionLabel: 'Ir para Minha Agenda'
+    });
+  };
+
+  const handleTrainingCompleted = (result: WeeklyTrainingResult, updatedPlayer: PlayerProfile) => {
+    const known = getPlayerKnownName(updatedPlayer);
+    const statSummary = result.statChanges
+      .map(c => `${c.statLabel}: ${c.before} → ${c.after} (${c.delta >= 0 ? `+${c.delta}` : c.delta})`)
+      .join('\n');
+
+    enqueuePopup({
+      id: `popup_train_${Date.now()}`,
+      category: result.outcomeType === 'negative' ? 'coach_note' : 'training',
+      badge: 'Relatório do CT',
+      title: `${result.outcomeTitle} • ${known}`,
+      subtitle: `Foco: ${result.focusTitle}`,
+      description: `${result.description}\n\n${statSummary}\n\nTécnico: "${result.coachFeedback}"`,
+      highlights: [
+        { label: 'OVR Atual', value: String(updatedPlayer.ovr), tone: 'emerald' },
+        {
+          label: 'Variação',
+          value: result.ovrDelta > 0 ? `+${result.ovrDelta} OVR` : result.ovrDelta < 0 ? `${result.ovrDelta} OVR` : 'Estável',
+          tone: result.ovrDelta >= 0 ? 'sky' : 'rose'
+        },
+        { label: 'Fôlego', value: `${updatedPlayer.energy}%`, tone: 'amber' }
+      ],
+      primaryActionLabel: 'Voltar ao Resumo',
+      onPrimaryAction: () => setActiveTab('resumo'),
+      secondaryActionLabel: 'Ficar nos Treinos'
+    });
+  };
+
+  const handleOpenNewsPopup = (article: NewsArticle) => {
+    const socialTxt = article.socialMediaPost
+      ? `\n\n💬 ${article.socialMediaPost.author} (${article.socialMediaPost.handle}):\n"${article.socialMediaPost.text}"`
+      : '';
+    const quoteTxt = article.interviewQuote ? `\n\n🎙️ Sua declaração:\n"${article.interviewQuote}"` : '';
+
+    enqueuePopup({
+      id: `popup_news_${article.id}_${Date.now()}`,
+      category: 'news',
+      badge: `${article.outlet} • ${article.categoryLabel}`,
+      title: article.headline,
+      subtitle: article.dateStr,
+      description: `${article.snippet}${quoteTxt}${socialTxt}`,
+      primaryActionLabel: 'Fechar Reportagem',
+      secondaryActionLabel: 'Abrir Imprensa Completa',
+      onSecondaryAction: () => {
+        setVestiarioSubTab('news');
+        setActiveTab('vestiario');
+      }
+    });
+  };
+
+  const handleAdvanceDay = () => {
+    if (!player) return;
+    triggerHaptic('tap');
+
+    const effectiveMatchDay = Math.max(
+      player.currentMatchDay || 1,
+      (player.currentSeasonStats?.games || 0) + 1
+    );
+    const known = getPlayerKnownName(player);
+    const clubObj = findClub(player.currentClub);
+    const weekDay = Math.min(4, Math.max(1, player.currentWeekDay || 1));
+
+    if (effectiveMatchDay > 38) {
+      enqueuePopup({
+        id: `popup_window_${Date.now()}`,
+        category: 'transfer_window',
+        badge: 'Janela de Transferências',
+        title: 'Mercado Aberto para Negociações!',
+        subtitle: `Fim da temporada ${player.seasonYear}`,
+        description: 'Chegaram novas propostas de clubes interessados no seu futebol. Avalie os contratos e salários ou escolha permanecer.',
+        primaryActionLabel: 'Ir para o Mercado da Bola',
+        onPrimaryAction: () => {
+          setMercadoSubTab('transfer');
+          setActiveTab('mercado');
+        },
+        secondaryActionLabel: 'Depois'
+      });
+      return;
+    }
+
+    // Dia 1 -> Dia 2 (Dia de Treino no CT)
+    if (weekDay === 1) {
+      const nextPlayer: PlayerProfile = {
+        ...player,
+        currentWeekDay: 2,
+        energy: Math.min(100, (player.energy || 75) + 4)
+      };
+      setPlayer(nextPlayer);
+
+      if (!nextPlayer.weeklyTrainingDone) {
+        enqueuePopup({
+          id: `popup_day2_train_${Date.now()}`,
+          category: 'training',
+          badge: 'Dia 2 • Centro de Treinamento',
+          title: 'Sessão Tática & Foco Semanal Aberta',
+          subtitle: `${clubObj.name} • Rodada ${effectiveMatchDay}/38`,
+          description: `A comissão técnica de ${clubObj.coachName} aguarda você no gramado do CT para definir o foco do treino desta semana.`,
+          highlights: [
+            { label: 'Fôlego', value: `${nextPlayer.energy}%`, tone: 'emerald' },
+            { label: 'OVR Atual', value: String(nextPlayer.ovr), tone: 'sky' }
+          ],
+          primaryActionLabel: 'Treinar Agora',
+          onPrimaryAction: () => {
+            setTrainingSubTab('attributes');
+            setActiveTab('treino');
+          },
+          secondaryActionLabel: 'Avançar Mesmo Assim'
+        });
+      }
+      return;
+    }
+
+    // Dia 2 -> Dia 3 (Bastidores, Oportunidades e Avisos de Condição)
+    if (weekDay === 2) {
+      const nextPlayer: PlayerProfile = {
+        ...player,
+        currentWeekDay: 3,
+        energy: Math.min(100, (player.energy || 75) + 3)
+      };
+      setPlayer(nextPlayer);
+
+      if (nextPlayer.activeOpportunity) {
+        setShowOpportunityModal(true);
+        return;
+      }
+
+      if (nextPlayer.energy < 60 && !nextPlayer.activeInjury) {
+        enqueuePopup({
+          id: `popup_fatigue_${Date.now()}`,
+          category: 'coach_note',
+          badge: 'Alerta da Fisiologia',
+          title: 'Fadiga Muscular Detectada no Elenco',
+          subtitle: `Energia em ${nextPlayer.energy}% antes da Rodada ${effectiveMatchDay}`,
+          description: 'O departamento de fisiologia recomendou atenção ao seu desgaste físico. Você pode fazer uma recuperação extra no CT/Fisioterapia antes da partida.',
+          highlights: [
+            { label: 'Fôlego Atual', value: `${nextPlayer.energy}%`, tone: 'rose' },
+            { label: 'Risco Lesão', value: 'Elevado', tone: 'amber' }
+          ],
+          primaryActionLabel: 'Ir para Fisioterapia',
+          onPrimaryAction: () => {
+            setTrainingSubTab('physio');
+            setActiveTab('treino');
+          },
+          secondaryActionLabel: 'Continuar Semana'
+        });
+        return;
+      }
+
+      if (Math.random() < 0.45) {
+        const fixture = getNextMatchFixture(nextPlayer);
+        generateRandomCareerOpportunity(nextPlayer, effectiveMatchDay, apiKey, {
+          opponentName: fixture.opponent.name
+        }).then(opp => {
+          if (opp) {
+            setPlayer(curr => (curr ? { ...curr, activeOpportunity: opp } : null));
+            setShowOpportunityModal(true);
+          }
+        });
+        return;
+      }
+
+      const nextFixture = getNextMatchFixture(nextPlayer);
+      if (nextFixture.isCupKnockout || nextFixture.isNationalTeamMatch) {
+        enqueuePopup({
+          id: `popup_prematch_${Date.now()}`,
+          category: 'coach_note',
+          badge: nextFixture.isNationalTeamMatch ? 'Convocação Oficial' : 'Véspera de Decisão',
+          title: nextFixture.isNationalTeamMatch
+            ? `${known} concentrado com a Seleção!`
+            : `Clima de Mata-Mata contra ${nextFixture.opponent.shortName}`,
+          subtitle: nextFixture.competitionName,
+          description: `A concentração começou! Amanhã é dia de jogo decisivo pela ${nextFixture.stageName}. Revise sua energia e preparo antes do apito inicial.`,
+          primaryActionLabel: 'Entendido'
+        });
+      }
+      return;
+    }
+
+    // Dia 3 -> Dia 4 (Dia de Jogo!)
+    if (weekDay === 3) {
+      const nextPlayer: PlayerProfile = {
+        ...player,
+        currentWeekDay: 4
+      };
+      setPlayer(nextPlayer);
+
+      if ((nextPlayer.suspensionRoundsRemaining || 0) > 0) {
+        enqueuePopup({
+          id: `popup_susp_day_${Date.now()}`,
+          category: 'suspension',
+          badge: 'Suspensão Automática',
+          title: 'Você está fora desta partida',
+          subtitle: nextPlayer.suspensionReason || 'Suspenso por cartões',
+          description: `Faltam ${nextPlayer.suspensionRoundsRemaining} rodada(s) para cumprir a punição. Acompanhe o jogo das arquibancadas para avançar a rodada.`,
+          primaryActionLabel: 'Cumprir Suspensão Agora',
+          onPrimaryAction: () => handleSimulateInjuryRound(),
+          secondaryActionLabel: 'Ficar no Resumo'
+        });
+        return;
+      }
+
+      if (nextPlayer.activeInjury && !nextPlayer.activeInjury.isPlayingOnSacrifice) {
+        setShowMedicalCenterModal(true);
+        return;
+      }
+
+      if (!nextPlayer.weeklyTrainingDone) {
+        enqueuePopup({
+          id: `popup_need_train_${Date.now()}`,
+          category: 'training',
+          badge: 'Último Aviso antes do Jogo',
+          title: 'Treino Semanal ainda não concluído',
+          subtitle: 'Complete seu treino antes de ir a campo',
+          description: `${clubObj.coachName} exige o cumprimento do foco semanal antes da escalação oficial. Realize a sessão de treino para liberar a partida!`,
+          primaryActionLabel: 'Ir para Treino Obrigatório',
+          onPrimaryAction: () => {
+            setTrainingSubTab('attributes');
+            setActiveTab('treino');
+          },
+          secondaryActionLabel: 'Fechar'
+        });
+        return;
+      }
+
+      const nextFixture = getNextMatchFixture(nextPlayer);
+      enqueuePopup({
+        id: `popup_matchday_${Date.now()}`,
+        category: 'match_alert',
+        badge: 'Dia de Jogo!',
+        title: `${nextFixture.isNationalTeamMatch ? nextPlayer.nationality : clubObj.shortName} vs ${nextFixture.opponent.shortName}`,
+        subtitle: `${nextFixture.competitionName} • ${nextFixture.stageName}`,
+        description: `Chegou a hora! O vestiário está pronto e a torcida já lota o ${clubObj.stadium}. Deseja ir para a preleção da partida?`,
+        primaryActionLabel: 'Ir para a Partida Agora',
+        onPrimaryAction: () => handleStartMatch(),
+        secondaryActionLabel: 'Preparar Antes'
+      });
+      return;
+    }
+
+    // Dia 4: Tenta abrir a partida (respeitando bloqueios)
+    handleStartMatch();
+  };
+
+  const handleAdvanceToMatchDay = () => {
+    if (!player) return;
+    const effectiveMatchDay = Math.max(
+      player.currentMatchDay || 1,
+      (player.currentSeasonStats?.games || 0) + 1
+    );
+    if (effectiveMatchDay > 38) {
+      handleAdvanceDay();
+      return;
+    }
+
+    const weekDay = Math.min(4, Math.max(1, player.currentWeekDay || 1));
+    if (!player.weeklyTrainingDone && weekDay < 2) {
+      handleAdvanceDay();
+      return;
+    }
+    if (!player.weeklyTrainingDone) {
+      setPlayer(curr => (curr ? { ...curr, currentWeekDay: 4 } : null));
+      enqueuePopup({
+        id: `popup_ff_train_${Date.now()}`,
+        category: 'training',
+        badge: 'Dia de Jogo • Treino Pendente',
+        title: 'Conclua o Treino Semanal para Jogar',
+        subtitle: `Rodada ${effectiveMatchDay} de 38`,
+        description: 'Você avançou até o Dia de Jogo, mas ainda falta definir o foco semanal de treino no CT antes de entrar em campo.',
+        primaryActionLabel: 'Ir para Treino Agora',
+        onPrimaryAction: () => {
+          setTrainingSubTab('attributes');
+          setActiveTab('treino');
+        }
+      });
+      return;
+    }
+
+    const updated: PlayerProfile = { ...player, currentWeekDay: 4 };
+    setPlayer(updated);
+
+    if (updated.activeInjury && !updated.activeInjury.isPlayingOnSacrifice) {
+      setShowMedicalCenterModal(true);
+      return;
+    }
+    if ((updated.suspensionRoundsRemaining || 0) > 0) {
+      enqueuePopup({
+        id: `popup_ff_susp_${Date.now()}`,
+        category: 'suspension',
+        badge: 'Suspensão Automática',
+        title: 'Você está suspenso nesta rodada',
+        description: 'Cumpra a suspensão nas arquibancadas para avançar à próxima rodada.',
+        primaryActionLabel: 'Cumprir Suspensão',
+        onPrimaryAction: () => handleSimulateInjuryRound()
+      });
+      return;
+    }
+
+    const fixture = getNextMatchFixture(updated);
+    setActiveFixture(fixture);
+    setActiveOpponent(fixture.opponent);
+    setShowMatchModal(true);
   };
 
   const handleStartMatch = () => {
     if (!player) return;
+    if (!player.weeklyTrainingDone) {
+      enqueuePopup({
+        id: `popup_block_train_${Date.now()}`,
+        category: 'training',
+        badge: 'Treino Obrigatório',
+        title: 'Faça o treino semanal primeiro',
+        description: 'Antes de entrar em campo na rodada, defina seu foco de treinamento semanal na aba Treinos.',
+        primaryActionLabel: 'Ir para Treinos',
+        onPrimaryAction: () => {
+          setTrainingSubTab('attributes');
+          setActiveTab('treino');
+        }
+      });
+      return;
+    }
     const fixture = getNextMatchFixture(player);
     setActiveFixture(fixture);
     setActiveOpponent(fixture.opponent);
@@ -279,13 +638,37 @@ export const App: React.FC = () => {
 
       if (wonLeagueTitle || endAwards.awards.length > 0) {
         triggerHaptic('trophy_award');
-        setAwardCelebrationBanner({
+        enqueuePopup({
+          id: `popup_endseason_${Date.now()}`,
+          category: 'award',
+          badge: endAwards.wonBallonDor ? 'Bola de Ouro!' : `Temporada ${postMatchEcon.seasonYear}`,
           title: endAwards.wonBallonDor
             ? `🥇 BOLA DE OURO ${postMatchEcon.seasonYear}!`
             : `🏆 Encerramento da Temporada ${postMatchEcon.seasonYear}`,
-          subtitle: endAwards.awards.length > 0
-            ? `Premiações conquistadas: ${endAwards.awards.map(a => a.title).join(' • ')}`
-            : `Campeão com o ${postMatchEcon.currentClub}!`
+          subtitle: wonLeagueTitle ? `Campeão com o ${postMatchEcon.currentClub}!` : 'Premiações & Janela Aberta',
+          description: endAwards.awards.length > 0
+            ? `Premiações conquistadas: ${endAwards.awards.map(a => a.title).join(' • ')}.\n\nA janela de transferências está aberta para avaliar propostas ou renovar seu contrato!`
+            : `Campeão com o ${postMatchEcon.currentClub}! A janela de transferências está aberta.`,
+          primaryActionLabel: 'Abrir Mercado da Bola',
+          onPrimaryAction: () => {
+            setMercadoSubTab('transfer');
+            setActiveTab('mercado');
+          },
+          secondaryActionLabel: 'Ver Resumo'
+        });
+      } else {
+        enqueuePopup({
+          id: `popup_window_end_${Date.now()}`,
+          category: 'transfer_window',
+          badge: `Fim da Temporada ${postMatchEcon.seasonYear}`,
+          title: 'Janela de Transferências Aberta!',
+          description: `Você encerrou as 38 rodadas pelo ${postMatchEcon.currentClub}. Confira propostas de novos clubes ou renove seu vínculo na aba Mercado.`,
+          primaryActionLabel: 'Abrir Mercado',
+          onPrimaryAction: () => {
+            setMercadoSubTab('transfer');
+            setActiveTab('mercado');
+          },
+          secondaryActionLabel: 'Continuar no Resumo'
         });
       }
 
@@ -321,6 +704,7 @@ export const App: React.FC = () => {
         ...agedPlayerCandidate,
         currentClub: refreshedClubAfterPromo.name,
         seasonYear: postMatchEcon.seasonYear + 1,
+        currentWeekDay: 1,
         history: [...postMatchEcon.history, newHistoryRecord],
         memories: endMemories,
         newsFeed: endNews.slice(0, 25),
@@ -387,9 +771,14 @@ export const App: React.FC = () => {
 
         if (potmResult.won) {
           triggerHaptic('trophy_award');
-          setAwardCelebrationBanner({
+          enqueuePopup({
+            id: `popup_potm_${Date.now()}`,
+            category: 'award',
+            badge: 'Prêmio Oficial da Liga',
             title: `🏆 JOGADOR DO MÊS DE ${potmResult.monthLabel.toUpperCase()}!`,
-            subtitle: `Você venceu o prêmio oficial de Craque do Mês (${potmResult.award?.ratingAvg.toFixed(1)} nota • ${potmResult.award?.goals}G • ${potmResult.award?.assists}A) e valorizou +€0.8M!`
+            subtitle: `Você foi eleito o melhor atleta do mês!`,
+            description: `Sua regularidade em campo rendeu o prêmio oficial de Craque do Mês (${potmResult.award?.ratingAvg.toFixed(1)} nota • ${potmResult.award?.goals}G • ${potmResult.award?.assists}A) e valorizou seu passe em +€0.8M!`,
+            primaryActionLabel: 'Celebrar Prêmio!'
           });
         }
       }
@@ -436,9 +825,38 @@ export const App: React.FC = () => {
       setPlayer({
         ...restedPlayer,
         currentMatchDay: safeMatchDay,
+        currentWeekDay: 1,
         weeklyTrainingDone: false,
         trainingVerdict: undefined
       });
+      setActiveTab('resumo');
+
+      if (restedPlayer.activeInjury && restedPlayer.activeInjury.occurredAtRound === completedMatchDay) {
+        enqueuePopup({
+          id: `popup_new_inj_${Date.now()}`,
+          category: 'injury',
+          badge: 'Alerta do Departamento Médico',
+          title: `Lesão Confirmada: ${restedPlayer.activeInjury.name}`,
+          subtitle: restedPlayer.activeInjury.causeTitle,
+          description: restedPlayer.activeInjury.doctorReport,
+          highlights: [
+            { label: 'Tempo Fora', value: `${restedPlayer.activeInjury.roundsRemaining} rodadas`, tone: 'rose' },
+            { label: 'Grau', value: `Grau ${restedPlayer.activeInjury.grade}`, tone: 'amber' }
+          ],
+          primaryActionLabel: 'Abrir Departamento Médico',
+          onPrimaryAction: () => setShowMedicalCenterModal(true),
+          secondaryActionLabel: 'Ver Depois'
+        });
+      } else if ((restedPlayer.suspensionRoundsRemaining || 0) > 0) {
+        enqueuePopup({
+          id: `popup_new_susp_${Date.now()}`,
+          category: 'suspension',
+          badge: 'Tribunal Disciplinar',
+          title: 'Suspensão Automática Aplicada',
+          description: `${restedPlayer.suspensionReason || 'Acúmulo de cartões ou expulsão'}. Você cumprirá ${restedPlayer.suspensionRoundsRemaining} jogo(s) de suspensão.`,
+          primaryActionLabel: 'Entendido'
+        });
+      }
 
       // 2. Sorteio de Acontecimento Aleatório & Bastidores de Carreira (Olheiros, Patrocínios, Dilemas de Vestiário)
       // Ocorre dinamicamente entre as rodadas com base no momento real da partida
@@ -513,6 +931,7 @@ export const App: React.FC = () => {
       setPlayer({
         ...ensuredPlayer,
         currentMatchDay: nextMatchDay,
+        currentWeekDay: 1,
         contract: nextContract,
         bankBalanceEur: nextBalance,
         financeHistory: [signingTx, ...(ensuredPlayer.financeHistory || [])].slice(0, 30),
@@ -522,6 +941,15 @@ export const App: React.FC = () => {
           board: Math.min(100, ensuredPlayer.relationships.board + 10)
         },
         memories: [mem, ...ensuredPlayer.memories]
+      });
+      setActiveTab('resumo');
+      enqueuePopup({
+        id: `popup_renew_${Date.now()}`,
+        category: 'transfer_window',
+        badge: 'Contrato Renovado',
+        title: `Você renovou com o ${ensuredPlayer.currentClub}!`,
+        description: `Novo vínculo de ${offer.years} ano(s) por ${formatEurCurrency(offer.monthlySalaryEur)}/mês + luvas de ${formatEurCurrency(offer.signingBonusEur)}.`,
+        primaryActionLabel: 'Voltar ao Resumo'
       });
     } else {
       // Transferiu-se para novo clube (pode mudar de liga!)
@@ -544,6 +972,7 @@ export const App: React.FC = () => {
         ...ensuredPlayer,
         currentClub: newClubName,
         currentMatchDay: nextMatchDay,
+        currentWeekDay: 1,
         energy: 100,
         contract: nextContract,
         bankBalanceEur: nextBalance,
@@ -556,6 +985,16 @@ export const App: React.FC = () => {
         },
         rivals: [...ensuredPlayer.rivals, oldClub],
         memories: [mem, ...ensuredPlayer.memories]
+      });
+      setActiveTab('resumo');
+      enqueuePopup({
+        id: `popup_transfer_${Date.now()}`,
+        category: 'transfer_window',
+        badge: 'Apresentação Oficial',
+        title: `Bem-vindo ao ${newClubName}!`,
+        subtitle: targetClubObj.league,
+        description: `Contrato assinado por ${offer.years} ano(s), salário de ${formatEurCurrency(offer.monthlySalaryEur)}/mês e luvas de ${formatEurCurrency(offer.signingBonusEur)} creditadas no seu saldo.`,
+        primaryActionLabel: 'Iniciar no Novo Clube'
       });
     }
   };
@@ -610,6 +1049,7 @@ export const App: React.FC = () => {
       setPlayer({
         ...player,
         currentMatchDay: player.currentMatchDay + 1,
+        currentWeekDay: 1,
         suspensionRoundsRemaining: remaining,
         suspensionReason: remaining === 0 ? undefined : player.suspensionReason,
         energy: Math.min(100, (player.energy || 75) + 25),
@@ -618,12 +1058,21 @@ export const App: React.FC = () => {
         weeklyTrainingDone: false,
         trainingVerdict: undefined
       });
+      setActiveTab('resumo');
+      enqueuePopup({
+        id: `popup_susp_done_${Date.now()}`,
+        category: 'suspension',
+        badge: 'Rodada Simulada',
+        title: remaining === 0 ? 'Suspensão Cumprida!' : '1 Jogo de Suspensão Cumprido',
+        description: suspArticle.snippet,
+        primaryActionLabel: 'Continuar'
+      });
       return;
     }
 
     if (!player.activeInjury) return;
 
-    const playerClub = CLUBS[player.currentClub] || CLUBS['Grêmio Novorizontino'];
+    const playerClub = findClub(player.currentClub);
 
     // Avança 1 rodada do protocolo de recuperação no DM
     const adv = advanceInjuryRound(player);
@@ -677,6 +1126,7 @@ export const App: React.FC = () => {
     setPlayer({
       ...updated,
       currentMatchDay: safeMatchDay,
+      currentWeekDay: 1,
       energy: Math.min(100, (updated.energy || 75) + 30), // Descanso total na tribuna recupera energia!
       matchHistory: [...(updated.matchHistory || []), skippedInj],
       newsFeed: [newsArticle, ...(updated.newsFeed || [])].slice(0, 25),
@@ -684,78 +1134,89 @@ export const App: React.FC = () => {
       weeklyTrainingDone: false,
       trainingVerdict: undefined
     });
+    setActiveTab('resumo');
+    enqueuePopup({
+      id: `popup_dm_done_${Date.now()}`,
+      category: healed ? 'welcome' : 'injury',
+      badge: healed ? 'Alta Médica Oficial' : 'Boletim do DM',
+      title: healed ? '100% Recuperado para Jogar!' : 'Mais 1 Semana de Tratamento Cumprida',
+      description: newsArticle.snippet,
+      primaryActionLabel: 'Continuar'
+    });
   };
+
+  const activePopup = popupQueue.length > 0 && !showMatchModal ? popupQueue[0] : null;
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-slate-100 flex flex-col font-sans pb-24 sm:pb-12 selection:bg-emerald-500 selection:text-black">
       {/* Top Header */}
       <Header
         player={player}
+        activeTab={activeTab}
+        onSelectResumo={() => setActiveTab('resumo')}
         onOpenSettings={() => setShowSettingsModal(true)}
-        onOpenMemories={() => setShowMemoryModal(true)}
-        onOpenLeagues={() => setShowLeaguesModal(true)}
-        onOpenTransferMarket={() => setShowTransferMarketModal(true)}
+        onOpenMemories={() => {
+          setVestiarioSubTab('memories');
+          setActiveTab('vestiario');
+        }}
+        onOpenLeagues={() => setActiveTab('ligas')}
+        onOpenTransferMarket={() => {
+          setMercadoSubTab('transfer');
+          setActiveTab('mercado');
+        }}
         onOpenTraining={() => {
-          setTrainingInitialTab('attributes');
-          setShowTrainingModal(true);
+          setTrainingSubTab('attributes');
+          setActiveTab('treino');
         }}
         onOpenAgenda={() => {
-          setTrainingInitialTab('agenda');
-          setShowTrainingModal(true);
+          setTrainingSubTab('agenda');
+          setActiveTab('treino');
         }}
-        onOpenFinances={() => setShowFinanceModal(true)}
-        onOpenTeammates={() => setShowTeammatesModal(true)}
+        onOpenFinances={() => {
+          setMercadoSubTab('finance');
+          setActiveTab('mercado');
+        }}
+        onOpenTeammates={() => {
+          setVestiarioSubTab('squad');
+          setActiveTab('vestiario');
+        }}
         onResetCareer={handleResetCareer}
       />
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-center">
-        {awardCelebrationBanner && (
-          <div className="mb-4 bg-gradient-to-r from-amber-950/90 via-[#1b2230] to-emerald-950/80 border border-amber-500/70 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xl animate-fadeIn">
-            <div>
-              <h3 className="text-sm sm:text-base font-black text-amber-300">{awardCelebrationBanner.title}</h3>
-              <p className="text-xs text-slate-200 mt-0.5">{awardCelebrationBanner.subtitle}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setAwardCelebrationBanner(null)}
-              className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-xs shrink-0"
-            >
-              Celebrar!
-            </button>
-          </div>
-        )}
-
+      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-start">
         {!player ? (
-          <div className="animate-in fade-in duration-300">
+          <div className="animate-in fade-in duration-300 my-auto">
             <PlayerIdentitySetup
-              onComplete={setPlayer}
-              onLoadExistingCareer={(loaded) => setPlayer(loaded)}
+              onComplete={handleCareerCreated}
+              onLoadExistingCareer={(loaded) => {
+                setPlayer({ ...loaded, currentWeekDay: loaded.currentWeekDay || 1 });
+                setActiveTab('resumo');
+              }}
             />
           </div>
         ) : (
           <div className="animate-in fade-in duration-300">
             <CareerDashboard
               player={player}
+              activeTab={activeTab}
+              onChangeTab={setActiveTab}
+              trainingSubTab={trainingSubTab}
+              onChangeTrainingSubTab={setTrainingSubTab}
+              mercadoSubTab={mercadoSubTab}
+              onChangeMercadoSubTab={setMercadoSubTab}
+              vestiarioSubTab={vestiarioSubTab}
+              onChangeVestiarioSubTab={setVestiarioSubTab}
+              onUpdatePlayer={setPlayer}
+              onTrainingCompleted={handleTrainingCompleted}
+              onAdvanceDay={handleAdvanceDay}
+              onAdvanceToMatchDay={handleAdvanceToMatchDay}
               onPlayNextMatch={handleStartMatch}
-              onOpenMemoryLedger={() => setShowMemoryModal(true)}
-              onOpenNewsFeed={() => setShowNewsModal(true)}
-              onOpenLeagues={() => setShowLeaguesModal(true)}
-              onOpenTransferMarket={() => setShowTransferMarketModal(true)}
               onSelectTransferClub={handleSelectTransferClub}
-              onOpenTraining={() => {
-                setTrainingInitialTab('attributes');
-                setShowTrainingModal(true);
-              }}
-              onOpenAgenda={() => {
-                setTrainingInitialTab('agenda');
-                setShowTrainingModal(true);
-              }}
-              onOpenFinances={() => setShowFinanceModal(true)}
-              onOpenTeammates={() => setShowTeammatesModal(true)}
               onOpenMedicalCenter={() => setShowMedicalCenterModal(true)}
               onSimulateInjuryRound={handleSimulateInjuryRound}
               onOpenOpportunity={() => setShowOpportunityModal(true)}
+              onOpenNewsPopup={handleOpenNewsPopup}
               onOpenSettings={() => setShowSettingsModal(true)}
               onResetCareer={handleResetCareer}
             />
@@ -763,7 +1224,7 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Modais do Jogo */}
+      {/* Modais Obrigatórios de Decisão, Acontecimento e Partida */}
       {showMatchModal && activeOpponent && player && (
         <MatchModal
           player={player}
@@ -775,60 +1236,6 @@ export const App: React.FC = () => {
             setShowMatchModal(false);
             setActiveFixture(null);
           }}
-        />
-      )}
-
-      {showMemoryModal && player && (
-        <MemoryLedgerModal
-          player={player}
-          onClose={() => setShowMemoryModal(false)}
-        />
-      )}
-
-      {showNewsModal && player && (
-        <NewsFeedModal
-          player={player}
-          onClose={() => setShowNewsModal(false)}
-        />
-      )}
-
-      {showLeaguesModal && player && (
-        <LeaguesAndSquadsModal
-          player={player}
-          onClose={() => setShowLeaguesModal(false)}
-        />
-      )}
-
-      {showTransferMarketModal && player && (
-        <TransferMarketModal
-          player={player}
-          onSelectTransferClub={handleSelectTransferClub}
-          onClose={() => setShowTransferMarketModal(false)}
-        />
-      )}
-
-      {showTrainingModal && player && (
-        <TrainingAndCalendarModal
-          player={player}
-          initialTab={trainingInitialTab}
-          onUpdatePlayer={setPlayer}
-          onClose={() => setShowTrainingModal(false)}
-        />
-      )}
-
-      {showFinanceModal && player && (
-        <FinanceAndContractModal
-          player={player}
-          onUpdatePlayer={setPlayer}
-          onClose={() => setShowFinanceModal(false)}
-        />
-      )}
-
-      {showTeammatesModal && player && (
-        <TeammateAffinityModal
-          player={player}
-          onUpdatePlayer={setPlayer}
-          onClose={() => setShowTeammatesModal(false)}
         />
       )}
 
@@ -865,7 +1272,7 @@ export const App: React.FC = () => {
           onSaveApiKey={handleSaveApiKey}
           onResetCareer={handleResetCareer}
           player={player}
-          onImportPlayer={(imported) => setPlayer(imported)}
+          onImportPlayer={(imported) => setPlayer({ ...imported, currentWeekDay: imported.currentWeekDay || 1 })}
           cloudUser={cloudUser}
           lastCloudSyncAt={lastCloudSyncAt}
           onCloudSynced={(ts) => setLastCloudSyncAt(ts)}
@@ -873,17 +1280,35 @@ export const App: React.FC = () => {
         />
       )}
 
+      {activePopup && (
+        <EventPopupModal
+          event={activePopup}
+          onPrimary={() => {
+            const cb = activePopup.onPrimaryAction;
+            dismissCurrentPopup();
+            if (cb) cb();
+          }}
+          onSecondary={() => {
+            const cb = activePopup.onSecondaryAction;
+            dismissCurrentPopup();
+            if (cb) cb();
+          }}
+          onDismiss={dismissCurrentPopup}
+        />
+      )}
+
       {player && (
         <MobileBottomNav
           player={player}
-          onScrollTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          onOpenAgenda={() => {
-            setTrainingInitialTab('agenda');
-            setShowTrainingModal(true);
+          activeTab={activeTab}
+          onSelectTab={(tab, sub) => {
+            setActiveTab(tab);
+            if (tab === 'treino' && sub) {
+              setTrainingSubTab(sub as any);
+            } else if (tab === 'mercado' && sub) {
+              setMercadoSubTab(sub as any);
+            }
           }}
-          onOpenLeagues={() => setShowLeaguesModal(true)}
-          onOpenFinances={() => setShowFinanceModal(true)}
-          onOpenTransferMarket={() => setShowTransferMarketModal(true)}
         />
       )}
     </div>

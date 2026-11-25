@@ -42,14 +42,18 @@ interface TrainingAndCalendarModalProps {
   player: PlayerProfile;
   initialTab?: 'attributes' | 'agenda' | 'coach_prep' | 'calendar' | 'physio';
   onUpdatePlayer: (updated: PlayerProfile) => void;
+  onTrainingCompleted?: (result: WeeklyTrainingResult, updatedPlayer: PlayerProfile) => void;
   onClose: () => void;
+  embedded?: boolean;
 }
 
 export const TrainingAndCalendarModal: React.FC<TrainingAndCalendarModalProps> = ({
   player,
   initialTab = 'attributes',
   onUpdatePlayer,
-  onClose
+  onTrainingCompleted,
+  onClose,
+  embedded = false
 }) => {
   const hierarchy = getSquadHierarchy(player);
   const [activeTab, setActiveTab] = useState<'attributes' | 'agenda' | 'coach_prep' | 'calendar' | 'physio'>(initialTab);
@@ -57,6 +61,10 @@ export const TrainingAndCalendarModal: React.FC<TrainingAndCalendarModalProps> =
   const [agendaMonthFilter, setAgendaMonthFilter] = useState<number | 'all'>('all');
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const effectiveMatchDay = Math.max(player.currentMatchDay || 1, (player.currentSeasonStats?.games || 0) + 1);
   const effectivePlayer: PlayerProfile = player.currentMatchDay !== effectiveMatchDay
@@ -73,12 +81,13 @@ export const TrainingAndCalendarModal: React.FC<TrainingAndCalendarModalProps> =
   );
 
   useEffect(() => {
+    if (embedded) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, embedded]);
 
   // Executa o treino focado escolhido (com cálculo de resultado positivo, estável ou negativo)
   const handleExecuteFocus = (focusId: string) => {
@@ -99,6 +108,9 @@ export const TrainingAndCalendarModal: React.FC<TrainingAndCalendarModalProps> =
     setTimeout(() => {
       const { updatedPlayer, result } = executeWeeklyTrainingFocus(player, focusId);
       onUpdatePlayer(updatedPlayer);
+      if (onTrainingCompleted) {
+        onTrainingCompleted(result, updatedPlayer);
+      }
       setIsProcessing(false);
 
       if (result.outcomeType === 'crit_success') {
@@ -137,9 +149,17 @@ export const TrainingAndCalendarModal: React.FC<TrainingAndCalendarModalProps> =
 
   const lastResult: WeeklyTrainingResult | undefined = player.lastTrainingResult;
 
-  return (
-    <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md select-none">
-      <div onClick={(e) => e.stopPropagation()} className="relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
+  const cardContent = (
+    <div
+      onClick={(e) => {
+        if (!embedded) e.stopPropagation();
+      }}
+      className={
+        embedded
+          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col select-none'
+          : 'relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
+      }
+    >
         
         {/* Header Superior */}
         <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
@@ -174,13 +194,15 @@ export const TrainingAndCalendarModal: React.FC<TrainingAndCalendarModalProps> =
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {!embedded && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -882,16 +904,25 @@ export const TrainingAndCalendarModal: React.FC<TrainingAndCalendarModalProps> =
           <span className="text-xs text-slate-400 text-center sm:text-left">
             Limite: 1 foco de treino por rodada. O sistema calcula a evolução técnica ou desgaste com base na sua energia física e idade.
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2 rounded-xl bg-white text-black font-extrabold text-xs hover:bg-slate-200 transition-colors shrink-0"
-          >
-            Concluir & Voltar
-          </button>
+          {!embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 rounded-xl bg-white text-black font-extrabold text-xs hover:bg-slate-200 transition-colors shrink-0"
+            >
+              Concluir & Voltar
+            </button>
+          )}
         </div>
 
       </div>
+  );
+
+  if (embedded) return cardContent;
+
+  return (
+    <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md select-none">
+      {cardContent}
     </div>
   );
 };

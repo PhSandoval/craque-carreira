@@ -32,12 +32,14 @@ interface FinanceAndContractModalProps {
   player: PlayerProfile;
   onUpdatePlayer: (updated: PlayerProfile) => void;
   onClose: () => void;
+  embedded?: boolean;
 }
 
 export const FinanceAndContractModal: React.FC<FinanceAndContractModalProps> = ({
   player: rawPlayer,
   onUpdatePlayer,
-  onClose
+  onClose,
+  embedded = false
 }) => {
   const player = ensurePlayerEconomy(rawPlayer);
   const currentClub = findClub(player.currentClub);
@@ -49,12 +51,13 @@ export const FinanceAndContractModal: React.FC<FinanceAndContractModalProps> = (
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
+    if (embedded) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, embedded]);
 
   const effectiveMatchDay = Math.max(player.currentMatchDay || 1, (player.currentSeasonStats?.games || 0) + 1);
   const remainder = effectiveMatchDay % 4;
@@ -82,15 +85,17 @@ export const FinanceAndContractModal: React.FC<FinanceAndContractModalProps> = (
     }
   };
 
-  return (
+  const cardContent = (
     <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
+      onClick={(e) => {
+        if (!embedded) e.stopPropagation();
+      }}
+      className={
+        embedded
+          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          : 'relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
+      }
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]"
-      >
         {/* Header */}
         <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-3">
@@ -114,13 +119,15 @@ export const FinanceAndContractModal: React.FC<FinanceAndContractModalProps> = (
                 {formatEurCurrency(player.bankBalanceEur || 0)}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {!embedded && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -370,15 +377,27 @@ export const FinanceAndContractModal: React.FC<FinanceAndContractModalProps> = (
           <span className="text-[11px] text-slate-400">
             Pagamentos mensais e bônus creditados automaticamente após as rodadas.
           </span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-white text-black font-extrabold text-xs hover:bg-slate-200 transition-colors shrink-0"
-          >
-            Fechar
-          </button>
+          {!embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 rounded-xl bg-white text-black font-extrabold text-xs hover:bg-slate-200 transition-colors shrink-0"
+            >
+              Fechar
+            </button>
+          )}
         </div>
       </div>
+  );
+
+  if (embedded) return cardContent;
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
+    >
+      {cardContent}
     </div>
   );
 };

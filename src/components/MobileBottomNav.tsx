@@ -1,28 +1,24 @@
 import React from 'react';
 import { PlayerProfile } from '../types';
 import { triggerHaptic } from '../services/hapticsService';
-import { Trophy, Calendar, Shield, Briefcase, ArrowRightLeft } from 'lucide-react';
+import type { DashboardTab } from './CareerDashboard';
+import { Trophy, Calendar, Shield, Dumbbell, ArrowRightLeft } from 'lucide-react';
 
 interface MobileBottomNavProps {
   player: PlayerProfile;
-  onScrollTop: () => void;
-  onOpenAgenda: () => void;
-  onOpenLeagues: () => void;
-  onOpenFinances: () => void;
-  onOpenTransferMarket: () => void;
+  activeTab?: DashboardTab;
+  onSelectTab: (tab: DashboardTab, subTab?: string) => void;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   player,
-  onScrollTop,
-  onOpenAgenda,
-  onOpenLeagues,
-  onOpenFinances,
-  onOpenTransferMarket
+  activeTab = 'resumo',
+  onSelectTab
 }) => {
-  const handlePress = (cb: () => void) => {
+  const handlePress = (tab: DashboardTab, subTab?: string) => {
     triggerHaptic('tap');
-    cb();
+    onSelectTab(tab, subTab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -30,51 +26,59 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       <div className="grid grid-cols-5 items-center h-14 px-1 text-[10px] font-bold">
         <button
           type="button"
-          onClick={() => handlePress(onScrollTop)}
-          className="flex flex-col items-center justify-center gap-0.5 text-emerald-400 active:scale-95 transition-transform"
+          onClick={() => handlePress('resumo')}
+          className={`flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform ${
+            activeTab === 'resumo' ? 'text-emerald-400' : 'text-slate-400'
+          }`}
         >
           <Trophy className="w-4 h-4" />
-          <span>Carreira</span>
+          <span>Resumo</span>
         </button>
 
         <button
           type="button"
-          onClick={() => handlePress(onOpenAgenda)}
-          className="relative flex flex-col items-center justify-center gap-0.5 text-slate-300 hover:text-purple-300 active:scale-95 transition-transform"
+          onClick={() => handlePress('treino', 'attributes')}
+          className={`relative flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform ${
+            activeTab === 'treino' ? 'text-teal-300' : 'text-slate-400'
+          }`}
         >
           <div className="relative">
-            <Calendar className="w-4 h-4 text-purple-400" />
+            <Dumbbell className="w-4 h-4" />
             {!player.weeklyTrainingDone && (
               <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-amber-400 animate-ping" />
             )}
           </div>
+          <span>Treino</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handlePress('treino', 'agenda')}
+          className="flex flex-col items-center justify-center gap-0.5 text-slate-400 hover:text-purple-300 active:scale-95 transition-transform"
+        >
+          <Calendar className="w-4 h-4 text-purple-400" />
           <span>Agenda</span>
         </button>
 
         <button
           type="button"
-          onClick={() => handlePress(onOpenLeagues)}
-          className="flex flex-col items-center justify-center gap-0.5 text-slate-300 hover:text-emerald-300 active:scale-95 transition-transform"
+          onClick={() => handlePress('ligas')}
+          className={`flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform ${
+            activeTab === 'ligas' ? 'text-sky-300' : 'text-slate-400'
+          }`}
         >
-          <Shield className="w-4 h-4 text-sky-400" />
+          <Shield className="w-4 h-4" />
           <span>Ligas</span>
         </button>
 
         <button
           type="button"
-          onClick={() => handlePress(onOpenFinances)}
-          className="flex flex-col items-center justify-center gap-0.5 text-slate-300 hover:text-emerald-300 active:scale-95 transition-transform"
+          onClick={() => handlePress('mercado', 'transfer')}
+          className={`flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform ${
+            activeTab === 'mercado' ? 'text-amber-300' : 'text-slate-400'
+          }`}
         >
-          <Briefcase className="w-4 h-4 text-emerald-400" />
-          <span>Finanças</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handlePress(onOpenTransferMarket)}
-          className="flex flex-col items-center justify-center gap-0.5 text-slate-300 hover:text-amber-300 active:scale-95 transition-transform"
-        >
-          <ArrowRightLeft className="w-4 h-4 text-amber-400" />
+          <ArrowRightLeft className="w-4 h-4" />
           <span>Mercado</span>
         </button>
       </div>

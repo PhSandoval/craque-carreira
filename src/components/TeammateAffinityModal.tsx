@@ -37,12 +37,14 @@ interface TeammateAffinityModalProps {
   player: PlayerProfile;
   onUpdatePlayer: (updatedPlayer: PlayerProfile) => void;
   onClose: () => void;
+  embedded?: boolean;
 }
 
 export const TeammateAffinityModal: React.FC<TeammateAffinityModalProps> = ({
   player,
   onUpdatePlayer,
-  onClose
+  onClose,
+  embedded = false
 }) => {
   const currentClub = CLUBS[player.currentClub] || CLUBS['Grêmio Novorizontino'];
   const [affinitiesMap, setAffinitiesMap] = useState<Record<string, TeammateAffinity>>(() => 
@@ -112,9 +114,14 @@ export const TeammateAffinityModal: React.FC<TeammateAffinityModalProps> = ({
 
   const currentPersona = LIFESTYLE_PERSONAS.find(p => p.id === (player.lifestylePersona || selectedPersonaId)) || LIFESTYLE_PERSONAS[0];
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
+  const cardContent = (
+    <div
+      className={
+        embedded
+          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          : 'relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
+      }
+    >
         
         {/* Header do Vestiário */}
         <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
@@ -135,13 +142,15 @@ export const TeammateAffinityModal: React.FC<TeammateAffinityModalProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Feedback de Ação */}
@@ -827,16 +836,25 @@ export const TeammateAffinityModal: React.FC<TeammateAffinityModalProps> = ({
           <div className="text-[11px] text-slate-400 hidden sm:block">
             Vestiário do <span className="text-white font-bold">{currentClub.name}</span> • Alta afinidade com companheiros desbloqueia jogadas combinadas em campo.
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full sm:w-auto px-6 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-colors"
-          >
-            Fechar Vestiário
-          </button>
+          {!embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full sm:w-auto px-6 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-colors"
+            >
+              Fechar Vestiário
+            </button>
+          )}
         </div>
 
       </div>
+  );
+
+  if (embedded) return cardContent;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
+      {cardContent}
     </div>
   );
 };

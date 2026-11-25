@@ -22,9 +22,10 @@ import {
 interface NewsFeedModalProps {
   player: PlayerProfile;
   onClose: () => void;
+  embedded?: boolean;
 }
 
-export const NewsFeedModal: React.FC<NewsFeedModalProps> = ({ player, onClose }) => {
+export const NewsFeedModal: React.FC<NewsFeedModalProps> = ({ player, onClose, embedded = false }) => {
   const [filter, setFilter] = useState<'all' | 'match' | 'interview' | 'transfer'>('all');
   
   // Obtém o feed dinâmico de notícias atualizado a cada jogo
@@ -38,9 +39,14 @@ export const NewsFeedModal: React.FC<NewsFeedModalProps> = ({ player, onClose })
     return true;
   });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-3xl bg-[#12151c] border border-blue-800/60 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]">
+  const cardContent = (
+    <div
+      className={
+        embedded
+          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          : 'relative w-full max-w-3xl bg-[#12151c] border border-blue-800/60 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
+      }
+    >
         
         {/* Header da Imprensa */}
         <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
@@ -63,13 +69,15 @@ export const NewsFeedModal: React.FC<NewsFeedModalProps> = ({ player, onClose })
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {!embedded && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Barra de Filtros */}
@@ -246,20 +254,29 @@ export const NewsFeedModal: React.FC<NewsFeedModalProps> = ({ player, onClose })
         </div>
 
         {/* Rodapé */}
-        <div className="bg-[#181d28] border-t border-slate-800 p-4 flex items-center justify-between">
-          <div className="text-[11px] text-slate-400 hidden sm:block">
-            As notícias são atualizadas automaticamente após cada partida jogada no campeonato.
+        {!embedded && (
+          <div className="bg-[#181d28] border-t border-slate-800 p-4 flex items-center justify-between">
+            <div className="text-[11px] text-slate-400 hidden sm:block">
+              As notícias são atualizadas automaticamente após cada partida jogada no campeonato.
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full sm:w-auto px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors shadow-lg shadow-blue-900/30"
+            >
+              Voltar ao Jogo
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full sm:w-auto px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors shadow-lg shadow-blue-900/30"
-          >
-            Voltar ao Jogo
-          </button>
-        </div>
+        )}
 
       </div>
+  );
+
+  if (embedded) return cardContent;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md">
+      {cardContent}
     </div>
   );
 };

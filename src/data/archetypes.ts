@@ -114,12 +114,29 @@ export const PLAYER_ARCHETYPES: PlayerArchetype[] = [
     positions: ['PE', 'PD'],
     attributeModifiers: {
       dribbling: +12,
-      pace: +8,
+      pace: +6,
       finalization: +4,
       defense: -10,
       physical: -4
     },
     tags: ['driblador', 'habilidoso', 'ousado']
+  },
+  {
+    id: 'ponta_velocista',
+    name: 'Ponta Velocista (Flecha / Facão)',
+    description: 'Explosão pura em velocidade máxima e diagonais em profundidade nas costas da zaga.',
+    pros: 'Letal em contra-ataques e infiltrações rápidas na área.',
+    cons: 'Sofre mais em jogos contra defesas muito recuadas sem espaço.',
+    positions: ['PE', 'PD'],
+    attributeModifiers: {
+      pace: +14,
+      finalization: +8,
+      physical: +4,
+      dribbling: +2,
+      passing: -4,
+      vision: -4
+    },
+    tags: ['velocista', 'contra_ataque', 'vertical']
   },
   {
     id: 'centroavante_matador',
@@ -174,6 +191,23 @@ export const PLAYER_ARCHETYPES: PlayerArchetype[] = [
     tags: ['xerife', 'pitbull', 'raca']
   },
   {
+    id: 'volante_construtor',
+    name: 'Volante Construtor (Regista)',
+    description: 'Recebe entre os zagueiros e organiza toda a saída de bola com passes verticais e visão.',
+    pros: 'Controla o ritmo do time e quebra linhas com lançamentos.',
+    cons: 'Menor pegada física nos choques mais duros de meio-campo.',
+    positions: ['VOL'],
+    attributeModifiers: {
+      passing: +12,
+      vision: +10,
+      dribbling: +4,
+      defense: +2,
+      physical: -4,
+      finalization: -4
+    },
+    tags: ['regista', 'saida_de_bola', 'cerebral']
+  },
+  {
     id: 'zagueiro_xerife',
     name: 'Zagueiro Xerife (Imposição & Bola Aérea)',
     description: 'Líder nato na defesa, soberano nas disputas de cabeça e divididas fortes.',
@@ -223,10 +257,172 @@ export const PLAYER_ARCHETYPES: PlayerArchetype[] = [
       pace: -8
     },
     tags: ['paredao', 'milagreiro']
+  },
+  {
+    id: 'goleiro_libero',
+    name: 'Goleiro Líbero (Jogo com os Pés)',
+    description: 'Sai rápido da meta para antecipar enfiadas e participa da saída de bola como um zagueiro.',
+    pros: 'Lançamentos precisos para contra-ataques e cobertura agressiva.',
+    cons: 'Assume maior risco em bolas alçadas e saídas divididas.',
+    positions: ['GOL'],
+    attributeModifiers: {
+      passing: +12,
+      vision: +10,
+      pace: +8,
+      defense: +4
+    },
+    tags: ['libero', 'saida_com_pes', 'moderno']
   }
 ];
+
+export type CoreAttributeKey =
+  | 'finalization'
+  | 'passing'
+  | 'dribbling'
+  | 'pace'
+  | 'defense'
+  | 'physical'
+  | 'vision';
+
+export const CORE_ATTRIBUTE_LABELS: Record<CoreAttributeKey, { label: string; short: string; color: string }> = {
+  finalization: { label: 'Finalização', short: 'FIN', color: '#f43f5e' },
+  passing: { label: 'Passe', short: 'PAS', color: '#38bdf8' },
+  dribbling: { label: 'Drible', short: 'DRI', color: '#a855f7' },
+  pace: { label: 'Velocidade', short: 'VEL', color: '#f59e0b' },
+  defense: { label: 'Defesa / Reflexos', short: 'DEF', color: '#10b981' },
+  physical: { label: 'Físico', short: 'FIS', color: '#fb923c' },
+  vision: { label: 'Visão de Jogo', short: 'VIS', color: '#22d3ee' }
+};
+
+export function getPositionBaseAttributes(position: Position): Record<CoreAttributeKey, number> {
+  switch (position) {
+    case 'GOL':
+      return { finalization: 32, passing: 56, dribbling: 40, pace: 50, defense: 66, physical: 62, vision: 56 };
+    case 'ZAG':
+      return { finalization: 44, passing: 56, dribbling: 48, pace: 58, defense: 66, physical: 65, vision: 54 };
+    case 'LE':
+    case 'LD':
+      return { finalization: 54, passing: 60, dribbling: 60, pace: 65, defense: 60, physical: 60, vision: 57 };
+    case 'VOL':
+      return { finalization: 50, passing: 62, dribbling: 56, pace: 58, defense: 64, physical: 64, vision: 60 };
+    case 'MC':
+    case 'ME':
+    case 'MD':
+      return { finalization: 58, passing: 64, dribbling: 62, pace: 61, defense: 55, physical: 60, vision: 63 };
+    case 'MEI':
+      return { finalization: 61, passing: 64, dribbling: 64, pace: 61, defense: 45, physical: 56, vision: 65 };
+    case 'PE':
+    case 'PD':
+      return { finalization: 62, passing: 58, dribbling: 65, pace: 66, defense: 40, physical: 56, vision: 59 };
+    case 'CA':
+    default:
+      return { finalization: 66, passing: 55, dribbling: 60, pace: 62, defense: 38, physical: 62, vision: 56 };
+  }
+}
 
 export function getArchetypesForPosition(position: Position): PlayerArchetype[] {
   const matches = PLAYER_ARCHETYPES.filter(a => a.positions.includes(position));
   return matches.length > 0 ? matches : [PLAYER_ARCHETYPES[0]];
+}
+
+export function deriveArchetypeFromAttributes(
+  position: Position,
+  attrs: Record<CoreAttributeKey, number>
+): {
+  archetype: PlayerArchetype;
+  matchPct: number;
+  dominantTraits: string[];
+  reason: string;
+} {
+  const candidates = getArchetypesForPosition(position);
+  const base = getPositionBaseAttributes(position);
+  const keys = Object.keys(CORE_ATTRIBUTE_LABELS) as CoreAttributeKey[];
+
+  const deltas: Record<CoreAttributeKey, number> = {
+    finalization: attrs.finalization - base.finalization,
+    passing: attrs.passing - base.passing,
+    dribbling: attrs.dribbling - base.dribbling,
+    pace: attrs.pace - base.pace,
+    defense: attrs.defense - base.defense,
+    physical: attrs.physical - base.physical,
+    vision: attrs.vision - base.vision
+  };
+
+  let best = candidates[0];
+  let bestScore = -Infinity;
+
+  candidates.forEach(arch => {
+    let score = 0;
+    keys.forEach(k => {
+      const mod = arch.attributeModifiers[k] || 0;
+      const d = deltas[k];
+      if (mod > 0) {
+        score += d * mod * 1.3;
+      } else if (mod < 0) {
+        // Bônus leve por seguir o perfil esperado, penalidade se investir pesado no oposto
+        score += d * mod * 0.4;
+      }
+    });
+    if (score > bestScore) {
+      bestScore = score;
+      best = arch;
+    }
+  });
+
+  const sortedByDelta = [...keys]
+    .filter(k => deltas[k] > 0)
+    .sort((a, b) => deltas[b] - deltas[a]);
+  const topTraits = (sortedByDelta.length > 0
+    ? sortedByDelta.slice(0, 3)
+    : [...keys].sort((a, b) => attrs[b] - attrs[a]).slice(0, 3)
+  ).map(k => CORE_ATTRIBUTE_LABELS[k].label);
+
+  const matchPct = Math.min(99, Math.max(68, Math.round(74 + Math.max(0, bestScore) * 0.14)));
+  const reason =
+    sortedByDelta.length > 0
+      ? `Sua distribuição destacou ${topTraits.join(', ')}, encaixando perfeitamente no perfil "${best.name}".`
+      : `Equilíbrio técnico natural na posição ${position} com foco em ${topTraits.join(', ')}.`;
+
+  return {
+    archetype: best,
+    matchPct,
+    dominantTraits: topTraits,
+    reason
+  };
+}
+
+export function getSuggestedPointsForArchetype(
+  position: Position,
+  archetype: PlayerArchetype,
+  totalPoints = 28
+): Record<CoreAttributeKey, number> {
+  const keys = Object.keys(CORE_ATTRIBUTE_LABELS) as CoreAttributeKey[];
+  const pts: Record<CoreAttributeKey, number> = {
+    finalization: 0,
+    passing: 0,
+    dribbling: 0,
+    pace: 0,
+    defense: 0,
+    physical: 0,
+    vision: 0
+  };
+  const positiveWeights = keys
+    .map(k => ({ key: k, weight: Math.max(1, (archetype.attributeModifiers[k] || 0) + (position === 'GOL' && k === 'defense' ? 6 : 2)) }))
+    .filter(w => (archetype.attributeModifiers[w.key] || 0) >= 0);
+
+  const totalWeight = positiveWeights.reduce((acc, w) => acc + w.weight, 0) || 1;
+  let allocated = 0;
+  positiveWeights.forEach((w, idx) => {
+    const share = idx === positiveWeights.length - 1
+      ? Math.max(0, totalPoints - allocated)
+      : Math.min(18, Math.round((w.weight / totalWeight) * totalPoints));
+    const clamped = Math.min(totalPoints - allocated, share);
+    pts[w.key] = clamped;
+    allocated += clamped;
+  });
+
+  if (allocated < totalPoints && positiveWeights[0]) {
+    pts[positiveWeights[0].key] += totalPoints - allocated;
+  }
+  return pts;
 }

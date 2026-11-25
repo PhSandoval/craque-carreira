@@ -75,6 +75,8 @@ export function setHapticsEnabled(enabled: boolean): void {
 export function triggerHaptic(event: HapticEventType, forceTest: boolean = false): boolean {
   if (!isHapticsSupported()) return false;
   if (!forceTest && !isHapticsEnabled()) return false;
+  const userActivation = (navigator as any)?.userActivation;
+  if (userActivation && !userActivation.hasBeenActive) return false;
 
   const pattern = HAPTIC_PATTERNS[event];
   if (!pattern) return false;
