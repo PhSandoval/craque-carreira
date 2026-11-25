@@ -1,0 +1,110 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// This security rules file assumes the following data structures:
+//
+// Collection: users/{uid}/saves
+// Document ID: {saveId} (e.g., 'career_v1')
+// Fields:
+//   - payloadJson: string (required, size <= 900000) - Serialized career save JSON payload
+//   - updatedAt: int | float | timestamp (required) - Last save timestamp (epoch ms or server timestamp)
+//   - playerName: string (required, size 1..120) - Player display name
+//   - club: string (required, size 1..120) - Current club name
+//   - ovr: int (required, 1..99) - Player overall rating
+//   - age: int (required, 15..55) - Player age in years
+//   - seasonYear: int (required, 2020..2150) - Current career season year
+//   - currentMatchDay: int (required, 1..60) - Current match day within the season
+//   - schemaVersion: int (required, >= 1) - Save schema version number
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user owns the target user path
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Validate that the document contains only the allowed fields
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate that all required fields exist
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate string type and inclusive length bounds
+    function validStringLength(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // Validate integer type and inclusive range bounds
+    function validIntRange(val, minVal, maxVal) {
+      return val is int && val >= minVal && val <= maxVal;
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    // Validate a user's career save document on both create and update
+    function isValidCareerSave(data) {
+      let allowedFields = [
+        'payloadJson',
+        'updatedAt',
+        'playerName',
+        'club',
+        'ovr',
+        'age',
+        'seasonYear',
+        'currentMatchDay',
+        'schemaVersion'
+      ];
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(allowedFields) &&
+             data.payloadJson is string &&
+             data.payloadJson.size() <= 900000 &&
+             validStringLength(data.playerName, 1, 120) &&
+             validStringLength(data.club, 1, 120) &&
+             (data.updatedAt is int || data.updatedAt is float || data.updatedAt is timestamp) &&
+             validIntRange(data.ovr, 1, 99) &&
+             validIntRange(data.age, 15, 55) &&
+             validIntRange(data.seasonYear, 2020, 2150) &&
+             validIntRange(data.currentMatchDay, 1, 60) &&
+             data.schemaVersion is int &&
+             data.schemaVersion >= 1;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // User-owned career saves (including 'career_v1')
+    match /users/{uid}/saves/{saveId} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidCareerSave(request.resource.data);
+      allow update: if isOwner(uid) && isValidCareerSave(request.resource.data);
+      allow delete: if isOwner(uid);
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

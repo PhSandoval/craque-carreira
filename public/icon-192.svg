@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" fill="none">
+  <defs>
+    <linearGradient id="bg192" x1="0" y1="0" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0b0e14"/>
+      <stop offset="100%" stop-color="#065f46"/>
+    </linearGradient>
+    <linearGradient id="gold192" x1="48" y1="36" x2="144" y2="156" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#bg192)"/>
+  <path d="M96 22L156 46V94C156 130.5 130.5 160 96 171C61.5 160 36 130.5 36 94V46L96 22Z" fill="#0d1117" stroke="#10b981" stroke-width="7"/>
+  <path d="M68 62H124V86C124 101 111.5 113 96 113C80.5 113 68 101 68 86V62Z" fill="url(#gold192)"/>
+  <path d="M68 68H54C51 82 57 92 68 94" stroke="#fbbf24" stroke-width="6" stroke-linecap="round"/>
+  <path d="M124 68H138C141 82 135 92 124 94" stroke="#fbbf24" stroke-width="6" stroke-linecap="round"/>
+  <rect x="89" y="112" width="14" height="20" rx="3" fill="#fbbf24"/>
+  <rect x="72" y="132" width="48" height="10" rx="5" fill="#10b981"/>
+</svg>

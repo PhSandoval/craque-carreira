@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Local secrets & budget ledger
+.env
+.env.*
+!.env.example
+.gemini-budget-ledger.json
+
+# Vercel & system files
+.vercel/
+.DS_Store
+*.log
