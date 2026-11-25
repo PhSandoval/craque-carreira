@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerProfile, Club } from '../types';
-import { CLUBS, getTransferOffersForPlayer } from '../data/clubs';
+import { CLUBS, findClub, getTransferOffersForPlayer } from '../data/clubs';
 import { getNextMatchFixture, getLeagueStandings, getActiveSeasonCompetitions, ActiveSeasonCompetition } from '../services/tournamentService';
 import { getStateCupStandings } from '../services/syncLeagueSimulationService';
 import { getSquadHierarchy } from '../services/squadHierarchyService';
@@ -74,7 +74,7 @@ export const CareerDashboard: React.FC<CareerDashboardProps> = ({
   onResetCareer
 }) => {
   const player = ensurePlayerEconomy(rawPlayer);
-  const currentClubObj = CLUBS[player.currentClub] || CLUBS['Grêmio Novorizontino'];
+  const currentClubObj = findClub(player.currentClub);
   
   // Sincronização estrita de rodada: se o jogador já disputou N jogos, a rodada NUNCA pode ser menor que N + 1
   const effectiveMatchDay = Math.max(player.currentMatchDay || 1, (player.currentSeasonStats?.games || 0) + 1);

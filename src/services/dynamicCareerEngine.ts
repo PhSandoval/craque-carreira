@@ -262,7 +262,8 @@ function generateProceduralCareerOpportunity(
 
   // Decide a temática com base no momento do atleta
   const themes: ('scout' | 'sponsorship' | 'locker_room')[] = ['scout', 'sponsorship', 'locker_room'];
-  let chosenTheme: 'scout' | 'sponsorship' | 'locker_room' = themes[(round + player.id.length) % themes.length];
+  let chosenTheme: 'scout' | 'sponsorship' | 'locker_room' =
+    themes[Math.floor(Math.abs(round + (player.id?.length || 0))) % themes.length] || 'scout';
 
   if (isHighScorer && Math.random() < 0.6) {
     chosenTheme = Math.random() < 0.5 ? 'scout' : 'sponsorship';
@@ -279,7 +280,8 @@ function generateProceduralCareerOpportunity(
       { name: 'Brighton & Hove Albion', scout: 'Equipe de Análise de Dados do Brighton', league: 'Premier League', bonusEur: 1.8 },
       { name: 'Arsenal FC', scout: 'Observador Técnico do Arsenal', league: 'Premier League', bonusEur: 2.8 }
     ];
-    const pickedScout = scoutClubs[(round + player.ovr) % scoutClubs.length];
+    const safeOvr = Number.isFinite(player.ovr) ? player.ovr : 65;
+    const pickedScout = scoutClubs[Math.floor(Math.abs(round + safeOvr)) % scoutClubs.length] || scoutClubs[0];
 
     return {
       id: `proc_scout_${round}_${Date.now()}`,
@@ -352,7 +354,7 @@ function generateProceduralCareerOpportunity(
       { brand: 'Puma', boot: 'Future Ultimate DNA', rival: 'Nike', bonus: 1.0 },
       { brand: 'Red Bull Energy', boot: 'Campanha de Atleta Radical & Comercial de TV', rival: 'Gatorade', bonus: 0.9 }
     ];
-    const sp = sponsors[(round + player.id.charCodeAt(0)) % sponsors.length];
+    const sp = sponsors[Math.floor(Math.abs(round + (player.id?.charCodeAt(0) || 1))) % sponsors.length] || sponsors[0];
 
     return {
       id: `proc_sponsorship_${round}_${Date.now()}`,

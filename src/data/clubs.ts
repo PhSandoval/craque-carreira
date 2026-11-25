@@ -7841,37 +7841,48 @@ export function getStartingClubsForNationality(countryName: string): {
  * Clubes exclusivos de copas continentais (isContinentalOnly) NUNCA fazem propostas ao nosso atleta!
  */
 export function getTransferOffersForPlayer(currentClubName: string, ovr: number, age: number): string[] {
-  const currentClub = CLUBS[currentClubName];
+  const currentClub = CLUBS[currentClubName] || findClub(currentClubName);
   const playableClubs = Object.values(CLUBS).filter(c => !c.isContinentalOnly && Boolean(LEAGUES[c.leagueId]));
   const offers: string[] = [];
   const currentTier = LEAGUES[currentClub?.leagueId || '']?.tier || 1;
+  const ovrInt = Math.floor(Math.abs(Number.isFinite(ovr) ? ovr : 65));
+  const ageInt = Math.floor(Math.abs(Number.isFinite(age) ? age : 18));
+
+  const pickByOvr = (list: Club[], offset = 0): string | null => {
+    if (list.length === 0) return null;
+    return list[(ovrInt + offset) % list.length]?.name || null;
+  };
+  const pickByAge = (list: Club[], offset = 0): string | null => {
+    if (list.length === 0) return null;
+    return list[(ageInt + offset) % list.length]?.name || null;
+  };
 
   if (currentTier === 3) {
     // Atleta na Série C: recebe propostas da Série B ou clubes emergentes da Série A se brilhar
     const tier2Same = playableClubs.filter(c => c.country === currentClub?.country && LEAGUES[c.leagueId]?.tier === 2);
-    if (tier2Same.length > 0) {
-      offers.push(tier2Same[ovr % tier2Same.length].name);
-      if (tier2Same[(ovr + 3) % tier2Same.length]) offers.push(tier2Same[(ovr + 3) % tier2Same.length].name);
-    }
+    const p1 = pickByOvr(tier2Same, 0);
+    const p2 = pickByOvr(tier2Same, 3);
+    if (p1) offers.push(p1);
+    if (p2) offers.push(p2);
     if (ovr >= 73) {
       const tier1Same = playableClubs.filter(c => c.country === currentClub?.country && LEAGUES[c.leagueId]?.tier === 1);
-      if (tier1Same.length > 0) offers.push(tier1Same[age % tier1Same.length].name);
+      const p3 = pickByAge(tier1Same, 0);
+      if (p3) offers.push(p3);
     }
   } else if (currentTier === 2) {
     if (ovr >= 70) {
       const firstTierOfSameCountry = playableClubs.filter(
         c => c.country === currentClub?.country && c.id !== currentClub?.id && LEAGUES[c.leagueId]?.tier === 1
       );
-      if (firstTierOfSameCountry.length > 0) {
-        offers.push(firstTierOfSameCountry[ovr % firstTierOfSameCountry.length].name);
-        if (firstTierOfSameCountry[(ovr + 2) % firstTierOfSameCountry.length]) {
-          offers.push(firstTierOfSameCountry[(ovr + 2) % firstTierOfSameCountry.length].name);
-        }
-      }
+      const p1 = pickByOvr(firstTierOfSameCountry, 0);
+      const p2 = pickByOvr(firstTierOfSameCountry, 2);
+      if (p1) offers.push(p1);
+      if (p2) offers.push(p2);
     }
     if (ovr >= 76) {
       const bridgeLeagues = playableClubs.filter(c => ['primeira_liga', 'eredivisie', 'russian_premier', 'super_league_gre', 'pro_league_bel'].includes(c.leagueId) && c.prestige >= 4);
-      if (bridgeLeagues.length > 0) offers.push(bridgeLeagues[age % bridgeLeagues.length].name);
+      const p3 = pickByAge(bridgeLeagues, 0);
+      if (p3) offers.push(p3);
     }
   } else {
     if (ovr >= 80) {
@@ -7880,16 +7891,20 @@ export function getTransferOffersForPlayer(currentClubName: string, ovr: number,
       const euroStepping = playableClubs.filter(
         c => c.id !== currentClub?.id && ['premier_league', 'la_liga', 'serie_a_ita', 'bundesliga', 'ligue_1', 'primeira_liga', 'eredivisie', 'super_lig', 'russian_premier', 'saudi_pro', 'super_league_gre'].includes(c.leagueId) && c.prestige >= 4
       );
-      if (euroStepping.length > 0) {
-        offers.push(euroStepping[ovr % euroStepping.length].name);
-        offers.push(euroStepping[(ovr + 5) % euroStepping.length].name);
-      }
+      const p1 = pickByOvr(euroStepping, 0);
+      const p2 = pickByOvr(euroStepping, 5);
+      if (p1) offers.push(p1);
+      if (p2) offers.push(p2);
     } else {
       const otherTier1 = playableClubs.filter(
         c => c.country === currentClub?.country && c.id !== currentClub?.id && LEAGUES[c.leagueId]?.tier === 1
       );
-      if (otherTier1.length > 0) offers.push(otherTier1[ovr % otherTier1.length].name);
-      if (otherTier1[1]) offers.push(otherTier1[(ovr + 1) % otherTier1.length].name);
+      const p1 = pickByOvr(otherTier1, 0);
+      if (p1) offers.push(p1);
+      if (otherTier1[1]) {
+        const p2 = pickByOvr(otherTier1, 1);
+        if (p2) offers.push(p2);
+      }
     }
   }
 

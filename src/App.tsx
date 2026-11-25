@@ -24,7 +24,8 @@ import {
   syncActiveLeaguesUpToRound,
   recordStateCupPlayerMatch,
   resetLeagueSimulationState,
-  getSynchronizedLeagueStandings
+  getSynchronizedLeagueStandings,
+  ensureSupplementalClubsHydrated
 } from './services/syncLeagueSimulationService';
 import { generateRandomCareerOpportunity } from './services/dynamicCareerEngine';
 import { calculatePlayerYearlyProgression, checkPositionTransitionOpportunity, PositionTransitionRecommendation } from './services/playerAgingService';
@@ -41,6 +42,7 @@ const STORAGE_KEY_API = 'craque_gemini_api_key_v1';
 export const App: React.FC = () => {
   const [player, setPlayer] = useState<PlayerProfile | null>(() => {
     try {
+      ensureSupplementalClubsHydrated();
       // Limpa versões legadas de teste para garantir nova carreira limpa
       localStorage.removeItem('craque_carreira_player_v1');
       localStorage.removeItem('craque_carreira_player_v2');
