@@ -59,24 +59,27 @@ export const LeaguesAndSquadsModal: React.FC<LeaguesAndSquadsModalProps> = ({
     <div
       className={
         embedded
-          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          ? 'relative w-full bg-[#11151d] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col'
           : 'relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
       }
     >
-        
         {/* Header */}
-        <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
+        <div className={embedded ? 'px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between' : 'bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between'}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400">
-              <Shield className="w-5 h-5" />
-            </div>
+            {!embedded && (
+              <div className="w-10 h-10 rounded-2xl bg-emerald-950/80 border border-emerald-700/60 flex items-center justify-center text-emerald-400">
+                <Shield className="w-5 h-5" />
+              </div>
+            )}
             <div>
-              <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                <span>Central de Ligas & Elencos Oficiais</span>
+              <h2 className="text-sm sm:text-base font-bold text-white">
+                {embedded ? 'Ligas, Artilharia & Elencos' : 'Central de Ligas & Elencos Oficiais'}
               </h2>
-              <p className="text-xs text-slate-400">
-                19 divisões oficiais pelo mundo + Artilharia, Assistências, Taças & Elencos completos.
-              </p>
+              {!embedded && (
+                <p className="text-xs text-slate-400">
+                  19 divisões oficiais pelo mundo + Artilharia, Assistências, Taças & Elencos completos.
+                </p>
+              )}
             </div>
           </div>
 

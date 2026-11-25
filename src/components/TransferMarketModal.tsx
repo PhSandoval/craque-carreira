@@ -49,35 +49,29 @@ export const TransferMarketModal: React.FC<TransferMarketModalProps> = ({
     <div
       className={
         embedded
-          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          ? 'relative w-full bg-[#11151d] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col'
           : 'relative w-full max-w-3xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
       }
     >
-        
         {/* Header */}
-        <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
+        <div className={embedded ? 'px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between' : 'bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between'}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-amber-950/80 border border-amber-700/60 flex items-center justify-center text-amber-400">
-              <ArrowRightLeft className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-white">
-                  Mercado da Bola & Transferências
-                </h2>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
-                  isSeasonEnd
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                }`}>
-                  {isSeasonEnd ? 'Janela Aberta' : 'Janela Fechada (Temporada Ativa)'}
-                </span>
+            {!embedded && (
+              <div className="w-10 h-10 rounded-2xl bg-amber-950/80 border border-amber-700/60 flex items-center justify-center text-amber-400">
+                <ArrowRightLeft className="w-5 h-5" />
               </div>
-              <p className="text-xs text-slate-400">
-                {isSeasonEnd
-                  ? 'Janela oficial de transferências de fim de temporada aberta para negociações!'
-                  : `Temporada 2026 em andamento (Rodada ${effectiveMatchDay} de 38). Sondagens e scouts do mercado.`}
-              </p>
+            )}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-white">
+                Mercado da Bola
+              </h2>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                isSeasonEnd
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+              }`}>
+                {isSeasonEnd ? 'Janela Aberta' : 'Janela Fechada'}
+              </span>
             </div>
           </div>
 

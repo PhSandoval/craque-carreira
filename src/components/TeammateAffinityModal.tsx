@@ -118,27 +118,26 @@ export const TeammateAffinityModal: React.FC<TeammateAffinityModalProps> = ({
     <div
       className={
         embedded
-          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          ? 'relative w-full bg-[#11151d] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col'
           : 'relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
       }
     >
-        
         {/* Header do Vestiário */}
-        <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
-          <div className="flex items-center space-x-3.5">
-            <ClubBadge club={currentClub} size="md" />
+        <div className={embedded ? 'px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between' : 'bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between'}>
+          <div className="flex items-center space-x-3">
+            {!embedded && <ClubBadge club={currentClub} size="md" />}
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                  <span>Vestiário & Dinâmica de Elenco</span>
-                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-bold border border-emerald-500/30">
-                    {teammatesList.length} companheiros
-                  </span>
-                </h2>
-              </div>
-              <p className="text-xs text-slate-400">
-                {currentClub.name} • Sua personalidade extracampo dita alianças, químicas e atritos no vestiário.
-              </p>
+              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>Vestiário & Elenco</span>
+                <span className="text-[11px] text-slate-400 font-normal">
+                  · {teammatesList.length} atletas
+                </span>
+              </h2>
+              {!embedded && (
+                <p className="text-xs text-slate-400">
+                  {currentClub.name} • Sua personalidade extracampo dita alianças, químicas e atritos no vestiário.
+                </p>
+              )}
             </div>
           </div>
 

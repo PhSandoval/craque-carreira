@@ -43,29 +43,30 @@ export const NewsFeedModal: React.FC<NewsFeedModalProps> = ({ player, onClose, e
     <div
       className={
         embedded
-          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          ? 'relative w-full bg-[#11151d] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col'
           : 'relative w-full max-w-3xl bg-[#12151c] border border-blue-800/60 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
       }
     >
-        
         {/* Header da Imprensa */}
-        <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-blue-900 to-indigo-950 border border-blue-600/60 flex items-center justify-center text-blue-300 shadow-lg">
-              <Newspaper className="w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                  <span>Central da Imprensa & Redes Sociais</span>
-                  <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full font-bold border border-blue-500/30">
-                    {newsList.length} reportagens
-                  </span>
-                </h2>
+        <div className={embedded ? 'px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between' : 'bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between'}>
+          <div className="flex items-center space-x-3">
+            {!embedded && (
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-blue-900 to-indigo-950 border border-blue-600/60 flex items-center justify-center text-blue-300 shadow-lg">
+                <Newspaper className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <p className="text-xs text-slate-400">
-                Cobertura jornalística dos seus jogos, repercussão da torcida e manchetes no {player.currentClub}.
-              </p>
+            )}
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>Imprensa & Redes Sociais</span>
+                <span className="text-[11px] text-slate-400 font-normal">
+                  · {newsList.length} reportagens
+                </span>
+              </h2>
+              {!embedded && (
+                <p className="text-xs text-slate-400">
+                  Cobertura jornalística dos seus jogos, repercussão da torcida e manchetes no {player.currentClub}.
+                </p>
+              )}
             </div>
           </div>
 

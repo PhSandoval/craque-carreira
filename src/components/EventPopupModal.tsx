@@ -54,80 +54,17 @@ interface EventPopupModalProps {
   onDismiss: () => void;
 }
 
-const CATEGORY_THEMES: Record<
-  CareerPopupCategory,
-  { border: string; badgeBg: string; iconBg: string; buttonBg: string; icon: React.ReactNode }
-> = {
-  welcome: {
-    border: 'border-emerald-500/60',
-    badgeBg: 'bg-emerald-950/90 text-emerald-300 border-emerald-700/70',
-    iconBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    buttonBg: 'bg-emerald-500 hover:bg-emerald-400 text-black',
-    icon: <Sparkles className="w-6 h-6" />
-  },
-  training: {
-    border: 'border-teal-500/60',
-    badgeBg: 'bg-teal-950/90 text-teal-300 border-teal-700/70',
-    iconBg: 'bg-teal-500/20 text-teal-300 border-teal-500/40',
-    buttonBg: 'bg-teal-400 hover:bg-teal-300 text-black',
-    icon: <Dumbbell className="w-6 h-6" />
-  },
-  match_alert: {
-    border: 'border-amber-500/60',
-    badgeBg: 'bg-amber-950/90 text-amber-300 border-amber-700/70',
-    iconBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-    buttonBg: 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-black',
-    icon: <Calendar className="w-6 h-6" />
-  },
-  award: {
-    border: 'border-yellow-500/70',
-    badgeBg: 'bg-yellow-950/90 text-yellow-300 border-yellow-600/70',
-    iconBg: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
-    buttonBg: 'bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 text-black',
-    icon: <Trophy className="w-6 h-6" />
-  },
-  finance: {
-    border: 'border-emerald-500/60',
-    badgeBg: 'bg-emerald-950/90 text-emerald-300 border-emerald-700/70',
-    iconBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-    buttonBg: 'bg-emerald-500 hover:bg-emerald-400 text-black',
-    icon: <Coins className="w-6 h-6" />
-  },
-  injury: {
-    border: 'border-rose-500/60',
-    badgeBg: 'bg-rose-950/90 text-rose-300 border-rose-700/70',
-    iconBg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
-    buttonBg: 'bg-rose-500 hover:bg-rose-400 text-white',
-    icon: <HeartPulse className="w-6 h-6" />
-  },
-  suspension: {
-    border: 'border-orange-500/60',
-    badgeBg: 'bg-orange-950/90 text-orange-300 border-orange-700/70',
-    iconBg: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
-    buttonBg: 'bg-orange-500 hover:bg-orange-400 text-black',
-    icon: <AlertTriangle className="w-6 h-6" />
-  },
-  transfer_window: {
-    border: 'border-sky-500/60',
-    badgeBg: 'bg-sky-950/90 text-sky-300 border-sky-700/70',
-    iconBg: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
-    buttonBg: 'bg-sky-400 hover:bg-sky-300 text-black',
-    icon: <Briefcase className="w-6 h-6" />
-  },
-  news: {
-    border: 'border-blue-500/60',
-    badgeBg: 'bg-blue-950/90 text-blue-300 border-blue-700/70',
-    iconBg: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-    buttonBg: 'bg-blue-500 hover:bg-blue-400 text-white',
-    icon: <Newspaper className="w-6 h-6" />
-  },
-  coach_note: {
-    border: 'border-purple-500/60',
-    badgeBg: 'bg-purple-950/90 text-purple-300 border-purple-700/70',
-    iconBg: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-    buttonBg: 'bg-purple-400 hover:bg-purple-300 text-black',
-    icon: <CheckCircle2 className="w-6 h-6" />
-  }
+const CATEGORY_ICONS: Record<CareerPopupCategory, { accent: string; icon: React.ReactNode }> = {
+  welcome: { accent: 'text-emerald-400 bg-emerald-500/10', icon: <Sparkles className="w-5 h-5" /> },
+  training: { accent: 'text-teal-400 bg-teal-500/10', icon: <Dumbbell className="w-5 h-5" /> },
+  match_alert: { accent: 'text-amber-400 bg-amber-500/10', icon: <Calendar className="w-5 h-5" /> },
+  award: { accent: 'text-yellow-400 bg-yellow-500/10', icon: <Trophy className="w-5 h-5" /> },
+  finance: { accent: 'text-emerald-400 bg-emerald-500/10', icon: <Coins className="w-5 h-5" /> },
+  injury: { accent: 'text-rose-400 bg-rose-500/10', icon: <HeartPulse className="w-5 h-5" /> },
+  suspension: { accent: 'text-orange-400 bg-orange-500/10', icon: <AlertTriangle className="w-5 h-5" /> },
+  transfer_window: { accent: 'text-sky-400 bg-sky-500/10', icon: <Briefcase className="w-5 h-5" /> },
+  news: { accent: 'text-blue-400 bg-blue-500/10', icon: <Newspaper className="w-5 h-5" /> },
+  coach_note: { accent: 'text-purple-400 bg-purple-500/10', icon: <CheckCircle2 className="w-5 h-5" /> }
 };
 
 export const EventPopupModal: React.FC<EventPopupModalProps> = ({
@@ -136,34 +73,31 @@ export const EventPopupModal: React.FC<EventPopupModalProps> = ({
   onSecondary,
   onDismiss
 }) => {
-  const theme = CATEGORY_THEMES[event.category] || CATEGORY_THEMES.welcome;
+  const meta = CATEGORY_ICONS[event.category] || CATEGORY_ICONS.welcome;
 
   return (
     <div
-      className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn"
+      className="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn"
       onClick={onDismiss}
     >
       <div
         onClick={e => e.stopPropagation()}
-        className={`w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[#121620] border ${theme.border} rounded-3xl shadow-2xl p-5 sm:p-6 space-y-4 custom-scrollbar`}
+        className="w-full max-w-md max-h-[88dvh] overflow-y-auto bg-[#12161f] border border-white/10 rounded-2xl shadow-2xl p-5 sm:p-6 space-y-4 custom-scrollbar"
       >
-        {/* Cabeçalho do Pop-up */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${theme.iconBg}`}>
-              {theme.icon}
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.accent}`}>
+              {meta.icon}
             </div>
-            <div className="space-y-1">
-              <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${theme.badgeBg}`}>
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                 {event.badge}
               </span>
-              <h2 className="text-lg sm:text-xl font-black text-white leading-tight">
+              <h2 className="text-base sm:text-lg font-bold text-white leading-snug">
                 {event.title}
               </h2>
               {event.subtitle && (
-                <p className="text-xs font-semibold text-slate-400">
-                  {event.subtitle}
-                </p>
+                <p className="text-xs text-slate-400">{event.subtitle}</p>
               )}
             </div>
           </div>
@@ -174,60 +108,43 @@ export const EventPopupModal: React.FC<EventPopupModalProps> = ({
               triggerHaptic('tap');
               onDismiss();
             }}
-            className="p-2 rounded-xl bg-slate-800/70 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors shrink-0"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-white/[0.06] transition-colors shrink-0"
             aria-label="Fechar aviso"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Texto principal explicativo */}
-        <div className="bg-[#0d1118] border border-slate-800 rounded-2xl p-4">
-          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line">
-            {event.description}
-          </p>
-        </div>
+        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed whitespace-pre-line bg-white/[0.02] border border-white/[0.06] rounded-xl p-3.5">
+          {event.description}
+        </p>
 
-        {/* Cards de destaque numéricos / tags */}
         {event.highlights && event.highlights.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {event.highlights.map((h, idx) => {
-              const toneClass =
-                h.tone === 'emerald'
-                  ? 'text-emerald-300 border-emerald-800/60 bg-emerald-950/30'
-                  : h.tone === 'amber'
-                  ? 'text-amber-300 border-amber-800/60 bg-amber-950/30'
-                  : h.tone === 'sky'
-                  ? 'text-sky-300 border-sky-800/60 bg-sky-950/30'
-                  : h.tone === 'rose'
-                  ? 'text-rose-300 border-rose-800/60 bg-rose-950/30'
-                  : h.tone === 'purple'
-                  ? 'text-purple-300 border-purple-800/60 bg-purple-950/30'
-                  : 'text-white border-slate-800 bg-[#171c28]';
-
-              return (
-                <div key={idx} className={`rounded-xl border p-2.5 text-center ${toneClass}`}>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                    {h.label}
-                  </span>
-                  <span className="text-xs sm:text-sm font-black block mt-0.5 truncate">
-                    {h.value}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-3 gap-2">
+            {event.highlights.map((h, idx) => (
+              <div
+                key={idx}
+                className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-2.5 text-center"
+              >
+                <span className="text-[10px] font-semibold uppercase text-slate-500 block">
+                  {h.label}
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-white block mt-0.5 truncate">
+                  {h.value}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 
-        {/* Botões de ação */}
-        <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+        <div className="flex flex-col sm:flex-row gap-2 pt-1">
           <button
             type="button"
             onClick={() => {
               triggerHaptic('tap');
               onPrimary();
             }}
-            className={`flex-1 py-3 px-4 rounded-2xl font-black text-xs sm:text-sm transition-all shadow-lg flex items-center justify-center gap-2 ${theme.buttonBg}`}
+            className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-1.5"
           >
             <span>{event.primaryActionLabel}</span>
             <ArrowRight className="w-4 h-4" />
@@ -241,7 +158,7 @@ export const EventPopupModal: React.FC<EventPopupModalProps> = ({
                 if (onSecondary) onSecondary();
                 else onDismiss();
               }}
-              className="py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs sm:text-sm transition-colors"
+              className="py-2.5 px-4 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 font-semibold text-xs sm:text-sm transition-colors"
             >
               {event.secondaryActionLabel}
             </button>

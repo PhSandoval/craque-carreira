@@ -156,42 +156,35 @@ export const TrainingAndCalendarModal: React.FC<TrainingAndCalendarModalProps> =
       }}
       className={
         embedded
-          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col select-none'
+          ? 'relative w-full bg-[#11151d] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col select-none'
           : 'relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
       }
     >
-        
         {/* Header Superior */}
-        <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-              <Dumbbell className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-white">
-                  Centro de Treinamento & Foco Tático
-                </h2>
-                <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full font-mono">
-                  {player.currentClub}
-                </span>
+        <div className={embedded ? 'px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between' : 'bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between'}>
+          <div className="flex items-center space-x-3">
+            {!embedded && (
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <Dumbbell className="w-5 h-5" />
               </div>
-              <p className="text-xs text-slate-400">
-                Preparação oficial para a Rodada {effectiveMatchDay} de 38 • Posição: <strong className="text-white">{player.position}</strong>
-              </p>
+            )}
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-white">
+                {embedded ? `Centro de Treinamento • Rodada ${effectiveMatchDay}` : 'Centro de Treinamento & Foco Tático'}
+              </h2>
+              {!embedded && (
+                <p className="text-xs text-slate-400">
+                  Preparação oficial para a Rodada {effectiveMatchDay} de 38 • Posição: <strong className="text-white">{player.position}</strong>
+                </p>
+              )}
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* Status de Energia */}
-            <div className="bg-[#10141d] px-3 py-1.5 rounded-xl border border-slate-800 flex items-center gap-2">
+            <div className="bg-white/[0.03] px-3 py-1 rounded-lg border border-white/[0.07] flex items-center gap-1.5 text-xs">
               <Zap className={`w-3.5 h-3.5 ${player.energy >= 70 ? 'text-emerald-400' : player.energy >= 50 ? 'text-yellow-400' : 'text-rose-400'}`} />
-              <div className="text-left">
-                <span className="text-[9px] font-bold text-slate-400 block uppercase">Fôlego</span>
-                <span className="text-xs font-black text-white font-mono tracking-wide">
-                  {player.energy}%
-                </span>
-              </div>
+              <span className="text-slate-400">Fôlego</span>
+              <span className="font-bold text-white font-mono">{player.energy}%</span>
             </div>
 
             {!embedded && (

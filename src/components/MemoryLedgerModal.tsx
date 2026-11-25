@@ -40,29 +40,30 @@ export const MemoryLedgerModal: React.FC<MemoryLedgerModalProps> = ({ player, on
     <div
       className={
         embedded
-          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          ? 'relative w-full bg-[#11151d] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col'
           : 'relative w-full max-w-3xl bg-[#12151c] border border-purple-800/60 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
       }
     >
-        
         {/* Header do Dossiê */}
-        <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between">
+        <div className={embedded ? 'px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between' : 'bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between'}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-purple-900 to-indigo-950 border border-purple-600/60 flex items-center justify-center text-purple-300 shadow-lg">
-              <Brain className="w-5 h-5 sm:w-6 sm:h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-white">
-                  Dossiê & Memória Contínua
-                </h2>
-                <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-bold border border-purple-700/40">
-                  {player.memories?.length || 0} fatos
-                </span>
+            {!embedded && (
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-purple-900 to-indigo-950 border border-purple-600/60 flex items-center justify-center text-purple-300 shadow-lg">
+                <Brain className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <p className="text-xs text-slate-400">
-                Raio-x do seu estilo de escolhas, perfil decisório sob pressão e histórico de carreira.
-              </p>
+            )}
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                <span>Dossiê & Memórias</span>
+                <span className="text-[11px] text-slate-400 font-normal">
+                  · {player.memories?.length || 0} fatos
+                </span>
+              </h2>
+              {!embedded && (
+                <p className="text-xs text-slate-400">
+                  Raio-x do seu estilo de escolhas, perfil decisório sob pressão e histórico de carreira.
+                </p>
+              )}
             </div>
           </div>
 

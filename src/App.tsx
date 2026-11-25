@@ -11,7 +11,7 @@ import {
 import { Header } from './components/Header';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { PlayerIdentitySetup } from './components/PlayerIdentitySetup';
-import { CareerDashboard, DashboardTab } from './components/CareerDashboard';
+import { CareerDashboard, DashboardTab, PerfilSubTab } from './components/CareerDashboard';
 import { MatchModal } from './components/MatchModal';
 import { SettingsModal } from './components/SettingsModal';
 import { MedicalCenterModal } from './components/MedicalCenterModal';
@@ -123,7 +123,7 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<DashboardTab>('resumo');
   const [trainingSubTab, setTrainingSubTab] = useState<'attributes' | 'agenda' | 'coach_prep' | 'calendar' | 'physio'>('attributes');
   const [mercadoSubTab, setMercadoSubTab] = useState<'transfer' | 'finance'>('transfer');
-  const [vestiarioSubTab, setVestiarioSubTab] = useState<'squad' | 'news' | 'memories'>('squad');
+  const [perfilSubTab, setPerfilSubTab] = useState<PerfilSubTab>('atributos');
 
   // Fila de Pop-ups Obrigatórios (decisões, acontecimentos, avisos e notícias)
   const [popupQueue, setPopupQueue] = useState<CareerPopupEvent[]>([]);
@@ -266,8 +266,8 @@ export const App: React.FC = () => {
       primaryActionLabel: 'Fechar Reportagem',
       secondaryActionLabel: 'Abrir Imprensa Completa',
       onSecondaryAction: () => {
-        setVestiarioSubTab('news');
-        setActiveTab('vestiario');
+        setPerfilSubTab('imprensa');
+        setActiveTab('perfil');
       }
     });
   };
@@ -1148,45 +1148,19 @@ export const App: React.FC = () => {
   const activePopup = popupQueue.length > 0 && !showMatchModal ? popupQueue[0] : null;
 
   return (
-    <div className="min-h-screen bg-[#0b0e14] text-slate-100 flex flex-col font-sans pb-24 sm:pb-12 selection:bg-emerald-500 selection:text-black">
-      {/* Top Header */}
+    <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex flex-col font-sans pb-20 sm:pb-10 selection:bg-emerald-500 selection:text-black">
+      {/* Top Header Único */}
       <Header
         player={player}
         activeTab={activeTab}
-        onSelectResumo={() => setActiveTab('resumo')}
+        onSelectTab={setActiveTab}
         onOpenSettings={() => setShowSettingsModal(true)}
-        onOpenMemories={() => {
-          setVestiarioSubTab('memories');
-          setActiveTab('vestiario');
-        }}
-        onOpenLeagues={() => setActiveTab('ligas')}
-        onOpenTransferMarket={() => {
-          setMercadoSubTab('transfer');
-          setActiveTab('mercado');
-        }}
-        onOpenTraining={() => {
-          setTrainingSubTab('attributes');
-          setActiveTab('treino');
-        }}
-        onOpenAgenda={() => {
-          setTrainingSubTab('agenda');
-          setActiveTab('treino');
-        }}
-        onOpenFinances={() => {
-          setMercadoSubTab('finance');
-          setActiveTab('mercado');
-        }}
-        onOpenTeammates={() => {
-          setVestiarioSubTab('squad');
-          setActiveTab('vestiario');
-        }}
-        onResetCareer={handleResetCareer}
       />
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-start">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 flex flex-col justify-start">
         {!player ? (
-          <div className="animate-in fade-in duration-300 my-auto">
+          <div className="animate-fadeIn my-auto">
             <PlayerIdentitySetup
               onComplete={handleCareerCreated}
               onLoadExistingCareer={(loaded) => {
@@ -1196,7 +1170,7 @@ export const App: React.FC = () => {
             />
           </div>
         ) : (
-          <div className="animate-in fade-in duration-300">
+          <div className="animate-fadeIn">
             <CareerDashboard
               player={player}
               activeTab={activeTab}
@@ -1205,8 +1179,8 @@ export const App: React.FC = () => {
               onChangeTrainingSubTab={setTrainingSubTab}
               mercadoSubTab={mercadoSubTab}
               onChangeMercadoSubTab={setMercadoSubTab}
-              vestiarioSubTab={vestiarioSubTab}
-              onChangeVestiarioSubTab={setVestiarioSubTab}
+              perfilSubTab={perfilSubTab}
+              onChangePerfilSubTab={setPerfilSubTab}
               onUpdatePlayer={setPlayer}
               onTrainingCompleted={handleTrainingCompleted}
               onAdvanceDay={handleAdvanceDay}
@@ -1217,8 +1191,6 @@ export const App: React.FC = () => {
               onSimulateInjuryRound={handleSimulateInjuryRound}
               onOpenOpportunity={() => setShowOpportunityModal(true)}
               onOpenNewsPopup={handleOpenNewsPopup}
-              onOpenSettings={() => setShowSettingsModal(true)}
-              onResetCareer={handleResetCareer}
             />
           </div>
         )}
@@ -1301,14 +1273,7 @@ export const App: React.FC = () => {
         <MobileBottomNav
           player={player}
           activeTab={activeTab}
-          onSelectTab={(tab, sub) => {
-            setActiveTab(tab);
-            if (tab === 'treino' && sub) {
-              setTrainingSubTab(sub as any);
-            } else if (tab === 'mercado' && sub) {
-              setMercadoSubTab(sub as any);
-            }
-          }}
+          onSelectTab={setActiveTab}
         />
       )}
     </div>

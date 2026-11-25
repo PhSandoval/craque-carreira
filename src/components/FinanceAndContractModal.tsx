@@ -92,30 +92,34 @@ export const FinanceAndContractModal: React.FC<FinanceAndContractModalProps> = (
       }}
       className={
         embedded
-          ? 'relative w-full bg-[#12151c] border border-slate-800/80 rounded-3xl shadow-xl overflow-hidden flex flex-col'
+          ? 'relative w-full bg-[#11151d] border border-white/[0.07] rounded-2xl overflow-hidden flex flex-col'
           : 'relative w-full max-w-4xl bg-[#12151c] border border-slate-700/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92dvh]'
       }
     >
         {/* Header */}
-        <div className="bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between shrink-0">
+        <div className={embedded ? 'px-5 py-3.5 border-b border-white/[0.06] flex items-center justify-between shrink-0' : 'bg-[#181d28] border-b border-slate-800 p-4 sm:p-5 flex items-center justify-between shrink-0'}>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-              <Briefcase className="w-5 h-5" />
-            </div>
+            {!embedded && (
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <Briefcase className="w-5 h-5" />
+              </div>
+            )}
             <div>
-              <h2 className="text-base sm:text-lg font-black text-white">
+              <h2 className="text-sm sm:text-base font-bold text-white">
                 Contrato, Finanças & Investimentos
               </h2>
-              <p className="text-xs text-slate-400">
-                Salários, patrocínios esportivos e gastos estratégicos na sua carreira
-              </p>
+              {!embedded && (
+                <p className="text-xs text-slate-400">
+                  Salários, patrocínios esportivos e gastos estratégicos na sua carreira
+                </p>
+              )}
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="bg-[#10141d] px-3 py-1.5 rounded-xl border border-emerald-800/60 text-right">
-              <span className="text-[9px] font-bold text-slate-400 block uppercase">Saldo Pessoal</span>
-              <span className="text-sm font-black text-emerald-400 font-mono">
+            <div className="bg-white/[0.03] px-3 py-1 rounded-lg border border-white/[0.07] text-right">
+              <span className="text-[9px] font-bold text-slate-400 block uppercase">Saldo</span>
+              <span className="text-xs sm:text-sm font-bold text-emerald-400 font-mono">
                 {formatEurCurrency(player.bankBalanceEur || 0)}
               </span>
             </div>
